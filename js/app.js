@@ -7,6 +7,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('hljs is available:', hljs);
     }
     
+    // Initialize progress UI for exports with error handling
+    try {
+        console.log('Setting up progress UI...');
+        if (typeof window.setupProgressUI === 'function') {
+            window.setupProgressUI();
+            console.log('Progress UI setup complete');
+        } else {
+            console.error('setupProgressUI is not a function!', typeof window.setupProgressUI);
+        }
+    } catch (error) {
+        console.error('Error setting up progress UI:', error);
+    }
+    
     // Initialize mermaid with better configuration
     mermaid.initialize({
         startOnLoad: false,
@@ -56,8 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
     renderBtn.addEventListener('click', renderMarkdown);
     clearBtn.addEventListener('click', clearContent);
     fileInput.addEventListener('change', handleFileUpload);
-    downloadPdfBtn.addEventListener('click', downloadAsPdf);
-    downloadPngBtn.addEventListener('click', downloadAsPng);
+    downloadPdfBtn.addEventListener('click', downloadAsPdfAdvanced);
+    downloadPngBtn.addEventListener('click', downloadAsPngAdvanced);
     
     // Auto-render on Ctrl+Enter
     markdownInput.addEventListener('keydown', function(e) {
