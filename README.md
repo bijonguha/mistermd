@@ -1,6 +1,6 @@
 # 📝 MisterMD - Enhanced Markdown & Mermaid Viewer
 
-> 🚀 **A professional, lightning-fast web application for rendering Markdown with stunning Mermaid diagrams**
+🚀 **A professional, lightning-fast web application for rendering Markdown with stunning Mermaid diagrams**
 
 🌐 **[Try MisterMD Live](https://mistermd.vercel.app)** | No installation required!
 
