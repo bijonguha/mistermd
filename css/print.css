@@ -1,0 +1,21 @@
+/* Print Styles for Better PDF/PNG Export */
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .preview {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+    }
+    
+    .preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+        page-break-after: avoid;
+    }
+    
+    .preview pre, .preview blockquote, .preview table {
+        page-break-inside: avoid;
+    }
+}
