@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Markdown and Mermaid Viewer</title>
+    <style>
+        :root {
+            --primary-color: #4A76C4;
+            --secondary-color: #7652BD;
+            --accent-color: #FF5722;
+            --text-color: #2c3e50;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --code-bg: #f1f5f9;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.7;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            background-color: var(--card-bg);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 40px 0;
+        }
+        
+        h1 {
+            color: black;
+            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 2.5rem;
+            letter-spacing: -0.025em;
+            background: none !important;
+            -webkit-background-clip: unset;
+            -webkit-text-fill-color: black;
+            background-clip: unset;
+            user-select: auto !important;
+        }
+        
+        .description {
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto 24px;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+        
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 20px;
+            background: var(--code-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            flex-grow: 1;
+            min-width: 200px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-input-label {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            color: white;
+            box-shadow: var(--shadow-sm);
+            letter-spacing: 0.025em;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-render {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+        }
+        
+        .btn-clear {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+        
+        .btn-pdf {
+            background: linear-gradient(135deg, var(--accent-color), #dc2626);
+        }
+        
+        .btn-png {
+            background: linear-gradient(135deg, var(--secondary-color), #7c3aed);
+        }
+        
+        textarea {
+            width: 100%;
+            height: 280px;
+            padding: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: var(--code-bg);
+            color: var(--text-color);
+            font-weight: 400;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 118, 196, 0.1);
+            background: white;
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+            color: var(--primary-color);
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .preview-container {
+            position: relative;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 16px 20px;
+            background: var(--code-bg);
+            border-radius: 12px 12px 0 0;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+        }
+        
+        .preview-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .preview {
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 12px 12px;
+            padding: 32px;
+            background-color: white;
+            min-height: 300px;
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        /* Enhanced Markdown Styling */
+        .preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+            color: var(--text-color);
+            margin-top: 2em;
+            margin-bottom: 0.8em;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            line-height: 1.3;
+        }
+        
+        .preview h1 {
+            font-size: 2.25rem;
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 0.5em;
+            margin-top: 0;
+        }
+        
+        .preview h2 {
+            font-size: 1.875rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 0.4em;
+        }
+        
+        .preview h3 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .preview h4 {
+            font-size: 1.25rem;
+        }
+        
+        .preview p {
+            margin: 1.2em 0;
+            text-align: justify;
+            hyphens: auto;
+        }
+        
+        .preview strong {
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        .preview em {
+            font-style: italic;
+            color: var(--secondary-color);
+        }
+        
+        .preview pre {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 24px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            margin: 1.5em 0;
+        }
+        
+        .preview code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            padding: 0.3em 0.6em;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .preview pre code {
+            background: none;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+        }
+        
+        .preview blockquote {
+            border-left: 4px solid var(--primary-color);
+            padding: 16px 24px;
+            margin: 1.5em 0;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: #1e40af;
+        }
+        
+        .preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 2em 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .preview table th, .preview table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            text-align: left;
+        }
+        
+        .preview table th {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+            letter-spacing: 0.025em;
+        }
+        
+        .preview table tr:nth-child(even) {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        }
+        
+        .preview table tr:hover {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        }
+        
+        .preview ul, .preview ol {
+            padding-left: 2em;
+            margin: 1.2em 0;
+        }
+        
+        .preview li {
+            margin: 0.5em 0;
+            line-height: 1.7;
+        }
+        
+        .preview .mermaid {
+            text-align: center;
+            margin: 2em 0;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .examples {
+            margin-top: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .examples-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .examples h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .example-btn {
+            background: linear-gradient(135deg, white, #f8fafc);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .example-btn:hover {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--code-bg);
+            border-radius: 12px;
+        }
+        
+        .heart {
+            color: #ef4444;
+            display: inline-block;
+            animation: heartbeat 2s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+            }
+            
+            .file-input-wrapper, .btn-group {
+                width: 100%;
+            }
+            
+            button, .file-input-label {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .preview {
+                padding: 20px;
+            }
+        }
+        
+        /* Print Styles for Better PDF/PNG Export */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .preview {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+            
+            .preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+                page-break-after: avoid;
+            }
+            
+            .preview pre, .preview blockquote, .preview table {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Enhanced Markdown & Mermaid Viewer</h1>
+        <p class="description">
+            Professional markdown viewer with high-quality rendering and export capabilities
+        </p>
+    </div>
+    
+    <div class="container">
+        <div class="toolbar">
+            <div class="file-input-wrapper">
+                <label for="file-input" class="file-input-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                    <span id="file-name">Choose markdown file...</span>
+                </label>
+                <input type="file" id="file-input" accept=".md, .markdown, .txt">
+            </div>
+            
+            <div class="btn-group">
+                <button id="render-btn" class="btn-render">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Render
+                </button>
+                <button id="clear-btn" class="btn-clear">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Clear
+                </button>
+                <button id="download-pdf-btn" class="btn-pdf">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    Export PDF
+                </button>
+                <button id="download-png-btn" class="btn-png">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    Export PNG
+                </button>
+            </div>
+        </div>
+        
+        <div class="editor-container">
+            <textarea id="markdown-input" placeholder="Enter your markdown content here, including Mermaid diagrams surrounded by ```mermaid and ``` tags..."></textarea>
+            
+            <div class="loading" id="loading">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>
+                <span id="loading-text">Processing...</span>
+            </div>
+            
+            <div class="preview-container">
+                <div class="preview-header">
+                    <h3 class="preview-title">Preview</h3>
+                </div>
+                <div class="preview" id="preview">
+                    <p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="examples">
+            <div class="examples-header">
+                <h3>Examples</h3>
+                <span style="color: #64748b; font-size: 14px;">Try these examples to see what's possible</span>
+            </div>
+            <div class="example-buttons">
+                <button class="example-btn" id="example-flowchart">Flowchart</button>
+                <button class="example-btn" id="example-sequence">Sequence Diagram</button>
+                <button class="example-btn" id="example-gantt">Gantt Chart</button>
+                <button class="example-btn" id="example-code">Code Examples</button>
+                <button class="example-btn" id="example-md">Complete Example</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Enhanced with <span class="heart">❤️</span> for better quality exports
+        </div>
+    </div>
+
+    <!-- Import the required libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.2.3/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.8.0/styles/github.min.css">
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Debug: Check if hljs is loaded
+            console.log('DOM loaded. Checking hljs availability:', typeof hljs);
+            if (typeof hljs === 'undefined') {
+                console.error('hljs is not defined! highlight.js failed to load.');
+            } else {
+                console.log('hljs is available:', hljs);
+            }
+            
+            // Initialize mermaid with better configuration
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'default',
+                securityLevel: 'loose',
+                flowchart: { 
+                    useMaxWidth: true, 
+                    htmlLabels: true,
+                    curve: 'basis'
+                },
+                sequence: {
+                    diagramMarginX: 50,
+                    diagramMarginY: 10,
+                    actorMargin: 50,
+                    width: 150,
+                    height: 65,
+                    boxMargin: 10,
+                    boxTextMargin: 5,
+                    noteMargin: 10,
+                    messageMargin: 35
+                },
+                gantt: {
+                    titleTopMargin: 25,
+                    barHeight: 20,
+                    fontFamily: '"Inter", sans-serif',
+                    fontSize: 11,
+                    gridLineStartPadding: 35,
+                    bottomPadding: 25,
+                    leftPadding: 75,
+                    rightPadding: 35
+                }
+            });
+
+            // Enhanced marked configuration with safety check
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    console.log('Highlight function called. hljs available:', typeof hljs !== 'undefined');
+                    if (typeof hljs === 'undefined') {
+                        console.error('hljs is undefined in highlight function');
+                        return code; // Return unhighlighted code as fallback
+                    }
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                breaks: true,
+                gfm: true,
+                headerIds: true,
+                mangle: false
+            });
+
+            // Custom renderer for better styling
+            const renderer = new marked.Renderer();
+            const originalCodeRenderer = renderer.code.bind(renderer);
+            
+            renderer.code = function(code, language) {
+                if (language === 'mermaid') {
+                    return `<div class="mermaid">${code}</div>`;
+                }
+                return originalCodeRenderer(code, language);
+            };
+
+            marked.use({ renderer });
+
+            // Get DOM elements
+            const markdownInput = document.getElementById('markdown-input');
+            const preview = document.getElementById('preview');
+            const renderBtn = document.getElementById('render-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const fileInput = document.getElementById('file-input');
+            const fileName = document.getElementById('file-name');
+            const loadingIndicator = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const downloadPdfBtn = document.getElementById('download-pdf-btn');
+            const downloadPngBtn = document.getElementById('download-png-btn');
+
+            // Event listeners
+            renderBtn.addEventListener('click', renderMarkdown);
+            clearBtn.addEventListener('click', clearContent);
+            fileInput.addEventListener('change', handleFileUpload);
+            downloadPdfBtn.addEventListener('click', downloadAsPdf);
+            downloadPngBtn.addEventListener('click', downloadAsPng);
+            
+            // Auto-render on Ctrl+Enter
+            markdownInput.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    renderMarkdown();
+                }
+            });
+
+            // Example buttons
+            document.getElementById('example-flowchart').addEventListener('click', () => {
+                markdownInput.value = 
+`# Flowchart Example
+
+Below is a simple flowchart showing a decision process:
+
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is it raining?}
+    B -->|Yes| C[Bring an umbrella]
+    B -->|No| D[Enjoy the sunshine]
+    C --> E[End]
+    D --> E
+    style A fill:#e1f5fe
+    style E fill:#c8e6c9
+    style B fill:#fff3e0
+\`\`\`
+
+The flowchart demonstrates how to represent decision points and different paths in a process.`;
+                renderMarkdown();
+            });
+
+            document.getElementById('example-sequence').addEventListener('click', () => {
+                markdownInput.value = 
+`# Sequence Diagram Example
+
+Below is a sequence diagram showing the interaction between different components:
+
+\`\`\`mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant Database
+    
+    User->>System: Login Request
+    System->>Database: Validate Credentials
+    Database-->>System: Authentication Result
+    alt is valid
+        System-->>User: Access Granted
+    else is invalid
+        System-->>User: Access Denied
+    end
+\`\`\`
+
+Sequence diagrams are great for visualizing the interaction between different components over time.`;
+                renderMarkdown();
+            });
+
+            document.getElementById('example-gantt').addEventListener('click', () => {
+                markdownInput.value = 
+`# Gantt Chart Example
+
+The Gantt chart below shows a project schedule:
+
+\`\`\`mermaid
+gantt
+    title Project Schedule
+    dateFormat  YYYY-MM-DD
+    section Planning
+    Requirement Analysis   :a1, 2025-05-01, 7d
+    System Design          :a2, after a1, 10d
+    section Development
+    Implementation         :a3, after a2, 15d
+    Testing                :a4, after a3, 7d
+    section Deployment
+    Training               :a5, after a4, 5d
+    Go Live                :milestone, after a5, 0d
+\`\`\`
+
+Gantt charts help visualize project timelines and dependencies between tasks.`;
+                renderMarkdown();
+            });
+
+            document.getElementById('example-md').addEventListener('click', () => {
+                markdownInput.value = 
+`# Project Documentation
+
+## Introduction
+This is an example of combining **Markdown** with *Mermaid* diagrams. Markdown is a lightweight markup language that you can use to add formatting elements to plaintext text documents.
+
+## System Architecture
+Below is our system architecture:
+
+\`\`\`mermaid
+flowchart LR
+    User[👤 User] --> Frontend[🖥️ Frontend]
+    Frontend --> API[🔗 API Gateway]
+    API --> ServiceA[⚙️ Service A]
+    API --> ServiceB[⚙️ Service B]
+    ServiceA --> DB[(🗄️ Database)]
+    ServiceB --> DB
+    style User fill:#e3f2fd
+    style Frontend fill:#f3e5f5
+    style API fill:#e8f5e8
+    style ServiceA fill:#fff3e0
+    style ServiceB fill:#fff3e0
+    style DB fill:#fce4ec
+\`\`\`
+
+## Features
+1. **Easy to use interface** - Intuitive design for all users
+2. **Real-time updates** - Live preview as you type
+3. **Data visualization** - Beautiful charts and diagrams
+
+> **Note:** This is just a demonstration of what's possible with markdown and Mermaid diagrams.
+
+## Component Interaction
+The sequence of operations:
+
+\`\`\`mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant F as 🖥️ Frontend
+    participant B as ⚙️ Backend
+    
+    U->>F: User Action
+    F->>B: API Request
+    B->>B: Process Data
+    B-->>F: Response
+    F-->>U: Update UI
+\`\`\`
+
+## Project Timeline
+
+\`\`\`mermaid
+gantt
+    title Project Timeline
+    dateFormat  YYYY-MM-DD
+    section Phase 1
+    Planning    :a1, 2025-05-01, 15d
+    Development :a2, after a1, 30d
+    section Phase 2
+    Testing     :a3, after a2, 20d
+    Deployment  :a4, after a3, 10d
+\`\`\`
+
+## Code Example
+\`\`\`javascript
+function processData(data) {
+    return data.map(item => {
+        return {
+            id: item.id,
+            value: item.value * 2,
+            timestamp: new Date().toISOString()
+        };
+    });
+}
+
+// Usage example
+const result = processData([
+    { id: 1, value: 10 },
+    { id: 2, value: 20 }
+]);
+console.log(result);
+\`\`\`
+
+## Feature Comparison
+
+| Feature | Status | Priority | Notes |
+|---------|--------|----------|-------|
+| 🔐 Login | ✅ Done | High | Needs security review |
+| 📊 Dashboard | 🔄 In Progress | High | 60% complete |
+| 📈 Reports | 📋 Planned | Medium | Starting next week |
+| 🔔 Notifications | ❌ Not Started | Low | Future enhancement |
+
+## Conclusion
+
+This enhanced viewer provides:
+- **High-quality rendering** with professional styling
+- **Better export quality** for PNG and PDF formats
+- **Responsive design** that works on all devices
+- **Enhanced typography** for better readability
+`;
+                renderMarkdown();
+            });
+
+            // Enhanced render function
+            function renderMarkdown() {
+                const markdownText = markdownInput.value;
+                if (!markdownText.trim()) {
+                    preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
+                    return;
+                }
+                
+                loadingIndicator.style.display = 'block';
+                loadingText.textContent = 'Rendering markdown...';
+                
+                setTimeout(() => {
+                    try {
+                        // Convert markdown to HTML
+                        const html = marked.parse(markdownText);
+                        preview.innerHTML = html;
+                        
+                        // Render mermaid diagrams
+                        const mermaidElements = document.querySelectorAll('.mermaid');
+                        if (mermaidElements.length > 0) {
+                            loadingText.textContent = 'Rendering diagrams...';
+                            mermaid.init(undefined, mermaidElements);
+                        }
+                        
+                        // Debug: Log current heading styles after rendering
+                        console.log('=== After Render Debug ===');
+                        const headings = preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                        headings.forEach((heading, index) => {
+                            const computedStyle = window.getComputedStyle(heading);
+                            console.log(`Rendered Heading ${heading.tagName} #${index}:`, {
+                                background: computedStyle.background,
+                                backgroundColor: computedStyle.backgroundColor,
+                                backgroundImage: computedStyle.backgroundImage,
+                                backgroundClip: computedStyle.backgroundClip,
+                                webkitBackgroundClip: computedStyle.webkitBackgroundClip,
+                                color: computedStyle.color,
+                                textContent: heading.textContent.substring(0, 50)
+                            });
+                        });
+                        
+                        loadingIndicator.style.display = 'none';
+                    } catch (error) {
+                        console.error('Rendering error:', error);
+                        preview.innerHTML = `<div style="color: #ef4444; padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+                            <strong>Rendering Error:</strong> ${error.message}
+                        </div>`;
+                        loadingIndicator.style.display = 'none';
+                    }
+                }, 100);
+            }
+
+            // Enhanced file upload handler
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                // Validate file type
+                const validTypes = ['.md', '.markdown', '.txt'];
+                const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                
+                if (!validTypes.includes(fileExtension)) {
+                    alert('Please select a valid markdown file (.md, .markdown, .txt)');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                fileName.textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    markdownInput.value = e.target.result;
+                    renderMarkdown();
+                };
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                    fileName.textContent = 'Choose markdown file...';
+                };
+                reader.readAsText(file);
+            }
+
+            // Clear content function
+            function clearContent() {
+                markdownInput.value = '';
+                preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
+                fileInput.value = '';
+                fileName.textContent = 'Choose markdown file...';
+            }
+
+            // Enhanced PNG download with higher quality
+            function downloadAsPng() {
+                if (!preview.innerHTML || preview.innerHTML.includes('Preview will appear here')) {
+                    alert('Please render some content first before downloading');
+                    return;
+                }
+
+                loadingIndicator.style.display = 'block';
+                loadingText.textContent = 'Generating high-quality PNG...';
+
+                let filename = 'markdown-export.png';
+                if (fileInput.files.length > 0) {
+                    const originalName = fileInput.files[0].name.split('.')[0];
+                    filename = `${originalName}.png`;
+                }
+
+                // Use html2canvas with high-quality settings
+                html2canvas(preview, {
+                    scale: 3, // Higher scale for better quality
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: preview.scrollWidth,
+                    height: preview.scrollHeight,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: preview.scrollWidth,
+                    windowHeight: preview.scrollHeight,
+                    onclone: function(clonedDoc) {
+                        // Debug: Log heading styles before export
+                        console.log('=== PNG Export Debug ===');
+                        const clonedPreview = clonedDoc.querySelector('.preview');
+                        if (clonedPreview) {
+                            clonedPreview.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif';
+                            clonedPreview.style.fontSize = '16px';
+                            clonedPreview.style.lineHeight = '1.8';
+                            
+                            // Debug: Check heading styles in cloned document
+                            const headings = clonedPreview.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                            headings.forEach((heading, index) => {
+                                const computedStyle = clonedDoc.defaultView.getComputedStyle(heading);
+                                console.log(`Heading ${heading.tagName} #${index}:`, {
+                                    background: computedStyle.background,
+                                    backgroundColor: computedStyle.backgroundColor,
+                                    backgroundImage: computedStyle.backgroundImage,
+                                    backgroundClip: computedStyle.backgroundClip,
+                                    webkitBackgroundClip: computedStyle.webkitBackgroundClip,
+                                    color: computedStyle.color
+                                });
+                            });
+                        }
+                    }
+                }).then(function(canvas) {
+                    // Convert to high-quality PNG
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL('image/png', 1.0); // Maximum quality
+                    link.click();
+                    
+                    loadingIndicator.style.display = 'none';
+                    loadingText.textContent = 'Processing...';
+                }).catch(function(error) {
+                    console.error('Error generating PNG:', error);
+                    alert('Error generating PNG: ' + error.message);
+                    loadingIndicator.style.display = 'none';
+                    loadingText.textContent = 'Processing...';
+                });
+                downloadPngBtn.blur();
+            }
+
+            // Enhanced PDF download
+            function downloadAsPdf() {
+                if (!preview.innerHTML || preview.innerHTML.includes('Preview will appear here')) {
+                    alert('Please render some content first before downloading');
+                    return;
+                }
+
+                loadingIndicator.style.display = 'block';
+                loadingText.textContent = 'Generating high-quality PDF...';
+
+                let filename = 'markdown-export.pdf';
+                if (fileInput.files.length > 0) {
+                    const originalName = fileInput.files[0].name.split('.')[0];
+                    filename = `${originalName}.pdf`;
+                }
+
+                html2canvas(preview, {
+                    scale: 2, // Good balance between quality and file size
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: preview.scrollWidth,
+                    height: preview.scrollHeight,
+                    onclone: function(clonedDoc) {
+                        // Debug: Log heading styles before PDF export
+                        console.log('=== PDF Export Debug ===');
+                        const clonedPreview = clonedDoc.querySelector('.preview');
+                        if (clonedPreview) {
+                            // Debug: Check heading styles in cloned document
+                            const headings = clonedPreview.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                            headings.forEach((heading, index) => {
+                                const computedStyle = clonedDoc.defaultView.getComputedStyle(heading);
+                                console.log(`PDF Heading ${heading.tagName} #${index}:`, {
+                                    background: computedStyle.background,
+                                    backgroundColor: computedStyle.backgroundColor,
+                                    backgroundImage: computedStyle.backgroundImage,
+                                    backgroundClip: computedStyle.backgroundClip,
+                                    webkitBackgroundClip: computedStyle.webkitBackgroundClip,
+                                    color: computedStyle.color
+                                });
+                            });
+                        }
+                    }
+                }).then(function(canvas) {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: 'a4',
+                        compress: true
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/png', 0.95);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = imgWidth / pdfWidth;
+                    const scaledHeight = imgHeight / ratio;
+                    
+                    if (scaledHeight <= pdfHeight) {
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, scaledHeight);
+                    } else {
+                        let remainingHeight = scaledHeight;
+                        let currentPosition = 0;
+                        
+                        pdf.addImage(imgData, 'PNG', 0, currentPosition, pdfWidth, scaledHeight);
+                        remainingHeight -= pdfHeight;
+                        
+                        while (remainingHeight > 0) {
+                            currentPosition -= pdfHeight;
+                            pdf.addPage();
+                            pdf.addImage(imgData, 'PNG', 0, currentPosition, pdfWidth, scaledHeight);
+                            remainingHeight -= pdfHeight;
+                        }
+                    }
+                    
+                    pdf.save(filename);
+                    loadingIndicator.style.display = 'none';
+                    loadingText.textContent = 'Processing...';
+                }).catch(function(error) {
+                    console.error('Error generating PDF:', error);
+                    alert('Error generating PDF: ' + error.message);
+                    loadingIndicator.style.display = 'none';
+                    loadingText.textContent = 'Processing...';
+                });
+                downloadPdfBtn.blur();
+            }
+
+            // Add spin animation for loading icon
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
+<!--
+To help diagnose the blue background highlight on headings after export,
+add this CSS override to temporarily remove background from all headings:
+
+h1, h2, h3, h4, h5, h6 {
+  background: none !important;
+  user-select: none !important;
+}
+
+This will help confirm if the blue background is caused by CSS styles applied to headings.
+-->
+<style>
+h1, h2, h3, h4, h5, h6 {
+  background: none !important;
+  user-select: none !important;
+}
+</style>
