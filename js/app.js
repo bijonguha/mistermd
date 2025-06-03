@@ -82,22 +82,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Example buttons
     document.getElementById('example-flowchart').addEventListener('click', () => {
         loadExample('flowchart');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('flowchart');
+        }
     });
 
     document.getElementById('example-sequence').addEventListener('click', () => {
         loadExample('sequence');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('sequence');
+        }
     });
 
     document.getElementById('example-gantt').addEventListener('click', () => {
         loadExample('gantt');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('gantt');
+        }
     });
 
     document.getElementById('example-code').addEventListener('click', () => {
         loadExample('code');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('code');
+        }
     });
 
     document.getElementById('example-md').addEventListener('click', () => {
         loadExample('complete');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('complete');
+        }
     });
 
     // Clear content function
@@ -106,5 +126,10 @@ document.addEventListener('DOMContentLoaded', function() {
         preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
         fileInput.value = '';
         fileName.textContent = 'Choose markdown file...';
+        
+        // Track content clearing with Google Analytics
+        if (typeof trackAction === 'function') {
+            trackAction('clear', 'button');
+        }
     }
 });

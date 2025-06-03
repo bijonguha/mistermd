@@ -76,6 +76,11 @@ function renderMarkdown() {
             });
             
             loadingIndicator.style.display = 'none';
+            
+            // Track successful rendering with Google Analytics
+            if (typeof trackRendering === 'function') {
+                trackRendering('button', markdownText.length);
+            }
         } catch (error) {
             console.error('Rendering error:', error);
             preview.innerHTML = `<div style="color: #ef4444; padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
