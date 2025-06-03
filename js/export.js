@@ -1883,6 +1883,12 @@ async function downloadAsPngAdvanced() {
     const loadingText = document.getElementById('loading-text');
     const downloadPngBtn = document.getElementById('download-png-btn');
     
+    // Track PNG export with Google Analytics
+    if (typeof trackExport === 'function') {
+        const filename = fileInput.files.length > 0 ? fileInput.files[0].name : 'markdown-export.png';
+        trackExport('PNG', filename);
+    }
+    
     // Get progress UI elements if they exist
     const progressModal = document.getElementById('exportProgress');
     const progressOverlay = document.getElementById('exportOverlay');
@@ -2006,6 +2012,12 @@ async function downloadAsPdfAdvanced() {
     const loadingIndicator = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    
+    // Track PDF export with Google Analytics
+    if (typeof trackExport === 'function') {
+        const filename = fileInput.files.length > 0 ? fileInput.files[0].name : 'markdown-export.pdf';
+        trackExport('PDF', filename);
+    }
     
     // Get progress UI elements if they exist
     const progressModal = document.getElementById('exportProgress');
