@@ -22,6 +22,12 @@ function handleFileUpload(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         markdownInput.value = e.target.result;
+        
+        // Track file upload with Google Analytics
+        if (typeof trackFileUpload === 'function') {
+            trackFileUpload(fileExtension, file.size);
+        }
+        
         renderMarkdown();
     };
     reader.onerror = function() {
