@@ -1,21 +1,37 @@
-// Enhanced marked configuration with safety check
-marked.setOptions({
-    highlight: function(code, lang) {
-        console.log('Highlight function called. hljs available:', typeof hljs !== 'undefined');
-        if (typeof hljs === 'undefined') {
-            console.error('hljs is undefined in highlight function');
-            return code; // Return unhighlighted code as fallback
-        }
-        if (lang && hljs.getLanguage(lang)) {
-            return hljs.highlight(code, { language: lang }).value;
-        }
-        return hljs.highlightAuto(code).value;
-    },
-    breaks: true,
-    gfm: true,
-    headerIds: true,
-    mangle: false
-});
+// Wait for configuration to load before setting up marked
+function initializeMarked() {
+    if (typeof window.appConfig === 'undefined') {
+        setTimeout(initializeMarked, 100);
+        return;
+    }
+    
+    const config = window.appConfig;
+    const markdownOptions = config.get('markdown.options');
+    
+    // Enhanced marked configuration with safety check
+    marked.setOptions({
+        highlight: function(code, lang) {
+            console.log('Highlight function called. hljs available:', typeof hljs !== 'undefined');
+            if (typeof hljs === 'undefined') {
+                console.error('hljs is undefined in highlight function');
+                return code; // Return unhighlighted code as fallback
+            }
+            if (lang && hljs.getLanguage(lang)) {
+                return hljs.highlight(code, { language: lang }).value;
+            }
+            return hljs.highlightAuto(code).value;
+        },
+        breaks: markdownOptions.breaks,
+        gfm: markdownOptions.gfm,
+        headerIds: markdownOptions.headerIds,
+        mangle: markdownOptions.mangle
+    });
+    
+    console.log('✅ Marked initialized with configuration');
+}
+
+// Initialize marked when page loads
+initializeMarked();
 
 // Custom renderer for better styling
 const renderer = new marked.Renderer();

@@ -58,38 +58,29 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error setting up progress UI:', error);
     }
     
-    // Initialize mermaid with better configuration
-    mermaid.initialize({
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'loose',
-        flowchart: { 
-            useMaxWidth: true, 
-            htmlLabels: true,
-            curve: 'basis'
-        },
-        sequence: {
-            diagramMarginX: 50,
-            diagramMarginY: 10,
-            actorMargin: 50,
-            width: 150,
-            height: 65,
-            boxMargin: 10,
-            boxTextMargin: 5,
-            noteMargin: 10,
-            messageMargin: 35
-        },
-        gantt: {
-            titleTopMargin: 25,
-            barHeight: 20,
-            fontFamily: '"Inter", sans-serif',
-            fontSize: 11,
-            gridLineStartPadding: 35,
-            bottomPadding: 25,
-            leftPadding: 75,
-            rightPadding: 35
+    // Initialize mermaid with configuration-based settings
+    function initializeMermaid() {
+        if (typeof window.appConfig === 'undefined') {
+            setTimeout(initializeMermaid, 100);
+            return;
         }
-    });
+        
+        const config = window.appConfig;
+        const mermaidConfig = config.get('markdown.mermaid');
+        
+        mermaid.initialize({
+            startOnLoad: mermaidConfig.startOnLoad,
+            theme: mermaidConfig.theme,
+            securityLevel: mermaidConfig.securityLevel,
+            flowchart: mermaidConfig.flowchart,
+            sequence: mermaidConfig.sequence,
+            gantt: mermaidConfig.gantt
+        });
+        
+        console.log('✅ Mermaid initialized with configuration');
+    }
+    
+    initializeMermaid();
 
     // Get DOM elements
     const markdownInput = document.getElementById('markdown-input');

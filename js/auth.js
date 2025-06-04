@@ -5,33 +5,53 @@ class AuthManager {
     constructor() {
         this.user = null;
         this.isInitialized = false;
-        this.clientId = '416699519304-7n5488jfl10dv2sjjdonmc7sbf09vobn.apps.googleusercontent.com';
+        this.config = null;
         this.callbacks = {
             onSignIn: [],
             onSignOut: []
         };
+        
+        // Wait for config to be available
+        this.waitForConfig();
+    }
+    
+    /**
+     * Wait for configuration to be loaded
+     */
+    waitForConfig() {
+        if (typeof window.appConfig !== 'undefined') {
+            this.config = window.appConfig;
+            console.log('✅ Auth: Configuration loaded');
+        } else {
+            setTimeout(() => this.waitForConfig(), 100);
+        }
     }
 
     // Initialize Google Identity Services
     async initialize() {
         console.log('🚀 Starting authentication initialization...');
         return new Promise((resolve, reject) => {
-            // Wait for Google Identity Services to load
-            if (typeof google === 'undefined') {
-                console.log('⏳ Waiting for Google Identity Services...');
+            // Wait for configuration and Google Identity Services to load
+            if (!this.config || typeof google === 'undefined') {
+                console.log('⏳ Waiting for configuration and Google Identity Services...');
                 setTimeout(() => this.initialize().then(resolve).catch(reject), 500);
                 return;
             }
 
+            const clientId = this.config.get('google.clientId');
+            const autoSelect = this.config.get('google.auth.autoSelect');
+            const cancelOnTapOutside = this.config.get('google.auth.cancelOnTapOutside');
+
             console.log('✅ Google object found');
-            console.log('🔧 Client ID:', this.clientId);
+            console.log('🔧 Client ID:', clientId);
+            console.log('🔧 Environment:', this.config.get('app.environment'));
 
             try {
                 google.accounts.id.initialize({
-                    client_id: this.clientId,
+                    client_id: clientId,
                     callback: (response) => this.handleCredentialResponse(response),
-                    auto_select: false,
-                    cancel_on_tap_outside: true
+                    auto_select: autoSelect,
+                    cancel_on_tap_outside: cancelOnTapOutside
                 });
 
                 this.isInitialized = true;
@@ -190,7 +210,8 @@ class AuthManager {
                 ...user,
                 timestamp: Date.now()
             };
-            localStorage.setItem('mistermd_user', JSON.stringify(userData));
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            localStorage.setItem(storageKey, JSON.stringify(userData));
         } catch (error) {
             console.error('Error saving user to storage:', error);
         }
@@ -199,12 +220,14 @@ class AuthManager {
     // Load user from localStorage
     loadUserFromStorage() {
         try {
-            const userData = localStorage.getItem('mistermd_user');
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            const userData = localStorage.getItem(storageKey);
             if (userData) {
                 const user = JSON.parse(userData);
-                // Check if token is not too old (24 hours)
+                // Check if token is not too old
+                const sessionTimeout = this.config.get('google.auth.sessionTimeout', 24 * 60 * 60 * 1000);
                 const tokenAge = Date.now() - user.timestamp;
-                if (tokenAge < 24 * 60 * 60 * 1000) {
+                if (tokenAge < sessionTimeout) {
                     this.user = user;
                     this.updateUI();
                     console.log('User loaded from storage:', user.name);
@@ -221,7 +244,8 @@ class AuthManager {
     // Clear user from localStorage
     clearUserFromStorage() {
         try {
-            localStorage.removeItem('mistermd_user');
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            localStorage.removeItem(storageKey);
         } catch (error) {
             console.error('Error clearing user from storage:', error);
         }

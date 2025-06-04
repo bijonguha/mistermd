@@ -6,13 +6,16 @@ function downloadAsPng() {
     const loadingText = document.getElementById('loading-text');
     const downloadPngBtn = document.getElementById('download-png-btn');
     
+    // Get configuration
+    const config = window.appConfig;
+    
     if (!preview.innerHTML || preview.innerHTML.includes('Preview will appear here')) {
         alert('Please render some content first before downloading');
         return;
     }
 
     loadingIndicator.style.display = 'block';
-    loadingText.textContent = 'Generating high-quality PNG...';
+    loadingText.textContent = config.get('ui.loading.exportText', 'Generating high-quality PNG...');
 
     let filename = 'markdown-export.png';
     if (fileInput.files.length > 0) {
@@ -20,12 +23,12 @@ function downloadAsPng() {
         filename = `${originalName}.png`;
     }
 
-    // Use html2canvas with high-quality settings
+    // Use html2canvas with configuration-based settings
     html2canvas(preview, {
-        scale: 3, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
+        scale: config.get('export.png.scale', 3),
+        useCORS: config.get('export.png.useCORS', true),
+        allowTaint: config.get('export.png.allowTaint', true),
+        backgroundColor: config.get('export.png.backgroundColor', '#ffffff'),
         width: preview.scrollWidth,
         height: preview.scrollHeight,
         scrollX: 0,
@@ -60,16 +63,17 @@ function downloadAsPng() {
         // Convert to high-quality PNG
         const link = document.createElement('a');
         link.download = filename;
-        link.href = canvas.toDataURL('image/png', 1.0); // Maximum quality
+        const quality = config.get('export.png.quality', 1.0);
+        link.href = canvas.toDataURL('image/png', quality);
         link.click();
         
         loadingIndicator.style.display = 'none';
-        loadingText.textContent = 'Processing...';
+        loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
     }).catch(function(error) {
         console.error('Error generating PNG:', error);
         alert('Error generating PNG: ' + error.message);
         loadingIndicator.style.display = 'none';
-        loadingText.textContent = 'Processing...';
+        loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
     });
     downloadPngBtn.blur();
 }
@@ -82,13 +86,16 @@ function downloadAsPdf() {
     const loadingText = document.getElementById('loading-text');
     const downloadPdfBtn = document.getElementById('download-pdf-btn');
     
+    // Get configuration
+    const config = window.appConfig;
+    
     if (!preview.innerHTML || preview.innerHTML.includes('Preview will appear here')) {
         alert('Please render some content first before downloading');
         return;
     }
 
     loadingIndicator.style.display = 'block';
-    loadingText.textContent = 'Generating high-quality PDF...';
+    loadingText.textContent = config.get('ui.loading.exportText', 'Generating high-quality PDF...');
 
     let filename = 'markdown-export.pdf';
     if (fileInput.files.length > 0) {
@@ -97,10 +104,10 @@ function downloadAsPdf() {
     }
 
     html2canvas(preview, {
-        scale: 2, // Good balance between quality and file size
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
+        scale: config.get('export.pdf.scale', 2),
+        useCORS: config.get('export.pdf.useCORS', true),
+        allowTaint: config.get('export.pdf.allowTaint', true),
+        backgroundColor: config.get('export.pdf.backgroundColor', '#ffffff'),
         width: preview.scrollWidth,
         height: preview.scrollHeight,
         onclone: function(clonedDoc) {
@@ -133,8 +140,9 @@ function downloadAsPdf() {
         });
         
         try {
-            // Use a lower quality and JPEG format for better compatibility
-            const imgData = canvas.toDataURL('image/jpeg', 0.85);
+            // Use configuration-based quality and format for better compatibility
+            const quality = config.get('export.pdf.quality', 0.85);
+            const imgData = canvas.toDataURL('image/jpeg', quality);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
             
@@ -215,12 +223,12 @@ function downloadAsPdf() {
         
         pdf.save(filename);
         loadingIndicator.style.display = 'none';
-        loadingText.textContent = 'Processing...';
+        loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
     }).catch(function(error) {
         console.error('Error generating PDF:', error);
         alert('Error generating PDF: ' + error.message);
         loadingIndicator.style.display = 'none';
-        loadingText.textContent = 'Processing...';
+        loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
     });
     downloadPdfBtn.blur();
 }
@@ -1948,7 +1956,7 @@ async function downloadAsPngAdvanced() {
                 progressOverlay.style.display = 'none';
             } else {
                 loadingIndicator.style.display = 'none';
-                loadingText.textContent = 'Processing...';
+                loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
             }
         },
         onSuccess: (stats) => {
@@ -1964,7 +1972,7 @@ async function downloadAsPngAdvanced() {
                 loadingText.textContent = 'PNG export successful!';
                 setTimeout(() => {
                     loadingIndicator.style.display = 'none';
-                    loadingText.textContent = 'Processing...';
+                    loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
                 }, 2000);
             }
         }
@@ -2104,7 +2112,7 @@ async function downloadAsPdfAdvanced() {
                 progressOverlay.style.display = 'none';
             } else {
                 loadingIndicator.style.display = 'none';
-                loadingText.textContent = 'Processing...';
+                loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
             }
         },
         onSuccess: (stats) => {
@@ -2120,7 +2128,7 @@ async function downloadAsPdfAdvanced() {
                 loadingText.textContent = 'PDF export successful!';
                 setTimeout(() => {
                     loadingIndicator.style.display = 'none';
-                    loadingText.textContent = 'Processing...';
+                    loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
                 }, 2000);
             }
         }
