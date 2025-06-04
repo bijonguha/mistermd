@@ -7,6 +7,44 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('hljs is available:', hljs);
     }
     
+    // Initialize authentication
+    if (typeof window.authManager !== 'undefined') {
+        console.log('Initializing authentication...');
+        window.authManager.initialize().then(() => {
+            console.log('Authentication initialized successfully');
+            
+            // Don't automatically render fallback button
+            // It will only show when the main button is clicked and prompt fails
+            
+            // Set up auth event listeners
+            window.authManager.onSignIn((user) => {
+                console.log('User signed in:', user.name);
+                // You can add custom logic here when user signs in
+                // For example, track in analytics or show welcome message
+                if (typeof gtag === 'function') {
+                    gtag('event', 'user_login', {
+                        method: 'Google',
+                        user_id: user.id
+                    });
+                }
+            });
+            
+            window.authManager.onSignOut(() => {
+                console.log('User signed out');
+                // You can add custom logic here when user signs out
+                if (typeof gtag === 'function') {
+                    gtag('event', 'user_logout', {
+                        method: 'Google'
+                    });
+                }
+            });
+        }).catch((error) => {
+            console.error('Failed to initialize authentication:', error);
+        });
+    } else {
+        console.error('Auth manager not found!');
+    }
+    
     // Initialize progress UI for exports with error handling
     try {
         console.log('Setting up progress UI...');

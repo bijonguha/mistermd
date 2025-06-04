@@ -22,13 +22,30 @@
 
       gtag('config', 'G-VKVMPPBDQL');
     </script>
+    
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="header">
-        <h1>The Markdown Viewer for AI-Powered Devs 🚀 </h1>
-        <p class="description">
-            Moder markdown viewer with high-quality rendering and export capabilities
-        </p>
+        <div class="header-content">
+            <div class="header-text">
+                <h1>The Markdown Viewer for AI-Powered Devs 🚀 </h1>
+                <p class="description">
+                    Moder markdown viewer with high-quality rendering and export capabilities
+                </p>
+            </div>
+            <div class="header-auth">
+                <button id="auth-button" class="auth-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
+                <div id="user-info" class="user-info"></div>
+                <div id="auth-container" class="auth-container"></div>
+            </div>
+        </div>
     </div>
     
     <div class="container">
@@ -133,6 +150,7 @@
     
     <!-- Import our JavaScript modules -->
     <script src="js/analytics.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/file-handler.js"></script>
     <script src="js/export.js"></script>
