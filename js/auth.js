@@ -234,14 +234,10 @@ class AuthManager {
         const authContainer = document.getElementById('auth-container');
 
         if (this.user) {
-            // User is signed in
+            // User is signed in - show only avatar in circular button
             if (authButton) {
                 authButton.innerHTML = `
                     <img src="${this.user.picture}" alt="${this.user.name}" class="user-avatar">
-                    <span class="user-name">${this.user.name}</span>
-                    <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
                 `;
                 authButton.className = 'auth-button signed-in';
                 authButton.onclick = () => this.toggleDropdown();
