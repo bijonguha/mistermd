@@ -1,24 +1,31 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Debug: Check if hljs is loaded
-    console.log('DOM loaded. Checking hljs availability:', typeof hljs);
+    // Check if hljs is loaded
     if (typeof hljs === 'undefined') {
-        console.error('hljs is not defined! highlight.js failed to load.');
-    } else {
-        console.log('hljs is available:', hljs);
+        if (window.log) {
+            window.log.error('hljs is not defined! highlight.js failed to load.', 'App');
+        }
+    } else if (window.log && window.appConfig?.get('development.debug')) {
+        window.log.debug('hljs is available', 'App');
     }
     
     // Initialize authentication
     if (typeof window.authManager !== 'undefined') {
-        console.log('Initializing authentication...');
+        if (window.log) {
+            window.log.info('Initializing authentication', 'App');
+        }
         window.authManager.initialize().then(() => {
-            console.log('Authentication initialized successfully');
+            if (window.log) {
+                window.log.info('Authentication initialized successfully', 'App');
+            }
             
             // Don't automatically render fallback button
             // It will only show when the main button is clicked and prompt fails
             
             // Set up auth event listeners
             window.authManager.onSignIn((user) => {
-                console.log('User signed in:', user.name);
+                if (window.log) {
+                    window.log.info(`User signed in: ${user.name}`, 'App');
+                }
                 // You can add custom logic here when user signs in
                 // For example, track in analytics or show welcome message
                 if (typeof gtag === 'function') {
@@ -30,7 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             window.authManager.onSignOut(() => {
-                console.log('User signed out');
+                if (window.log) {
+                    window.log.info('User signed out', 'App');
+                }
                 // You can add custom logic here when user signs out
                 if (typeof gtag === 'function') {
                     gtag('event', 'user_logout', {
@@ -39,23 +48,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }).catch((error) => {
-            console.error('Failed to initialize authentication:', error);
+            if (window.log) {
+                window.log.error('Failed to initialize authentication', 'App', error);
+            }
         });
     } else {
-        console.error('Auth manager not found!');
+        if (window.log) {
+            window.log.error('Auth manager not found!', 'App');
+        }
     }
     
     // Initialize progress UI for exports with error handling
     try {
-        console.log('Setting up progress UI...');
+        if (window.log) {
+            window.log.debug('Setting up progress UI', 'App');
+        }
         if (typeof window.setupProgressUI === 'function') {
             window.setupProgressUI();
-            console.log('Progress UI setup complete');
-        } else {
-            console.error('setupProgressUI is not a function!', typeof window.setupProgressUI);
+            if (window.log) {
+                window.log.debug('Progress UI setup complete', 'App');
+            }
+        } else if (window.log) {
+            window.log.warn('setupProgressUI is not a function', 'App');
         }
     } catch (error) {
-        console.error('Error setting up progress UI:', error);
+        if (window.log) {
+            window.log.error('Error setting up progress UI', 'App', error);
+        }
     }
     
     // Initialize mermaid with configuration-based settings
@@ -77,7 +96,9 @@ document.addEventListener('DOMContentLoaded', function() {
             gantt: mermaidConfig.gantt
         });
         
-        console.log('✅ Mermaid initialized with configuration');
+        if (window.log) {
+            window.log.info('Mermaid initialized with configuration', 'App');
+        }
     }
     
     initializeMermaid();

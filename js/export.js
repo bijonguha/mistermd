@@ -70,7 +70,9 @@ function downloadAsPng() {
         loadingIndicator.style.display = 'none';
         loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');
     }).catch(function(error) {
-        console.error('Error generating PNG:', error);
+        if (window.log) {
+            window.log.error('Error generating PNG', 'Export', error);
+        }
         alert('Error generating PNG: ' + error.message);
         loadingIndicator.style.display = 'none';
         loadingText.textContent = config.get('ui.loading.defaultText', 'Processing...');

@@ -11,9 +11,10 @@ function initializeMarked() {
     // Enhanced marked configuration with safety check
     marked.setOptions({
         highlight: function(code, lang) {
-            console.log('Highlight function called. hljs available:', typeof hljs !== 'undefined');
             if (typeof hljs === 'undefined') {
-                console.error('hljs is undefined in highlight function');
+                if (window.log) {
+                    window.log.warn('hljs is undefined in highlight function', 'Renderer');
+                }
                 return code; // Return unhighlighted code as fallback
             }
             if (lang && hljs.getLanguage(lang)) {
@@ -27,7 +28,9 @@ function initializeMarked() {
         mangle: markdownOptions.mangle
     });
     
-    console.log('✅ Marked initialized with configuration');
+    if (window.log) {
+        window.log.info('Marked initialized with configuration', 'Renderer');
+    }
 }
 
 // Initialize marked when page loads
@@ -48,15 +51,17 @@ marked.use({ renderer });
 
 // Debug function to test authentication status
 window.testAuth = function() {
-    console.log('=== AUTHENTICATION TEST ===');
-    console.log('🔧 authManager exists:', typeof window.authManager !== 'undefined');
-    if (typeof window.authManager !== 'undefined') {
-        console.log('🔧 isAuthenticated method exists:', typeof window.authManager.isAuthenticated === 'function');
-        console.log('🔐 User authenticated:', window.authManager.isAuthenticated());
-        console.log('👤 Current user:', window.authManager.getCurrentUser());
-        console.log('🆔 User ID:', window.authManager.getUserId());
+    if (window.log) {
+        window.log.group('Authentication Test', 'Renderer');
+        window.log.debug(`authManager exists: ${typeof window.authManager !== 'undefined'}`, 'Renderer');
+        if (typeof window.authManager !== 'undefined') {
+            window.log.debug(`isAuthenticated method exists: ${typeof window.authManager.isAuthenticated === 'function'}`, 'Renderer');
+            window.log.debug(`User authenticated: ${window.authManager.isAuthenticated()}`, 'Renderer');
+            window.log.debug('Current user', 'Renderer', window.authManager.getCurrentUser());
+            window.log.debug(`User ID: ${window.authManager.getUserId()}`, 'Renderer');
+        }
+        window.log.groupEnd();
     }
-    console.log('=== END TEST ===');
 };
 
 // Enhanced render function with authentication check
@@ -66,29 +71,54 @@ function renderMarkdown() {
     const loadingIndicator = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     
+    // Validate input element exists
+    if (!markdownInput) {
+        if (window.log) {
+            window.log.error('Markdown input element not found', 'Renderer');
+        }
+        return;
+    }
+    
     const markdownText = markdownInput.value;
+    
+    // Validate content
+    if (!markdownText || typeof markdownText !== 'string') {
+        if (window.log) {
+            window.log.warn('No markdown text to render', 'Renderer');
+        }
+        preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
+        return;
+    }
+    
     if (!markdownText.trim()) {
         preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
         return;
     }
 
     // Force authentication check every time
-    console.log('🔍 Checking authentication status...');
-    console.log('🔧 authManager available:', typeof window.authManager !== 'undefined');
+    if (window.log) {
+        window.log.debug('Checking authentication status', 'Renderer');
+        window.log.debug(`authManager available: ${typeof window.authManager !== 'undefined'}`, 'Renderer');
+    }
     
     // Check authentication status
     let isAuthenticated = false;
     if (typeof window.authManager !== 'undefined' && window.authManager.isAuthenticated) {
         isAuthenticated = window.authManager.isAuthenticated();
-        console.log('🔐 User authenticated:', isAuthenticated);
-        console.log('👤 Current user:', window.authManager.getCurrentUser());
+        if (window.log) {
+            window.log.debug(`User authenticated: ${isAuthenticated}`, 'Renderer');
+        }
     } else {
-        console.log('⚠️ AuthManager not properly initialized');
+        if (window.log) {
+            window.log.warn('AuthManager not properly initialized', 'Renderer');
+        }
     }
     
     // If not authenticated, force sign-in
     if (!isAuthenticated) {
-        console.log('🚨 User NOT authenticated - triggering sign-in for render');
+        if (window.log) {
+            window.log.info('User not authenticated - triggering sign-in for render', 'Renderer');
+        }
         
         // Show user-friendly message in preview area
         preview.innerHTML = `
@@ -142,22 +172,31 @@ function renderMarkdown() {
         
         // Add one-time callback for after sign-in
         window.authManager.onSignIn(function(user) {
-            console.log('✅ User signed in, proceeding with render');
+            if (window.log) {
+                window.log.info('User signed in, proceeding with render', 'Renderer');
+            }
             loadingIndicator.style.display = 'none';
             
-            // Proceed with rendering the stored markdown
-            if (window.pendingRender) {
+            // Proceed with rendering the stored markdown with validation
+            if (window.pendingRender && typeof window.pendingRender === 'string' && window.pendingRender.trim()) {
                 setTimeout(() => {
                     actualRenderMarkdown(window.pendingRender);
                     window.pendingRender = null;
                 }, 500);
+            } else {
+                if (window.log) {
+                    window.log.warn('No valid pending render content after sign-in', 'Renderer');
+                }
+                window.pendingRender = null;
             }
         });
         
         // Handle cancellation - set a timeout to check if sign-in was cancelled
         setTimeout(() => {
             if (window.pendingRender && !window.authManager.isAuthenticated()) {
-                console.log('⏰ Sign-in timed out or was cancelled');
+                if (window.log) {
+                    window.log.debug('Sign-in timed out or was cancelled', 'Renderer');
+                }
                 loadingIndicator.style.display = 'none';
                 preview.innerHTML = `
                     <div style="
@@ -195,7 +234,9 @@ function renderMarkdown() {
         if (typeof window.authManager !== 'undefined' && window.authManager.signIn) {
             window.authManager.signIn();
         } else {
-            console.error('❌ Cannot trigger sign-in - authManager.signIn not available');
+            if (window.log) {
+                window.log.error('Cannot trigger sign-in - authManager.signIn not available', 'Renderer');
+            }
             alert('Authentication system not ready. Please refresh the page.');
         }
         
@@ -203,7 +244,9 @@ function renderMarkdown() {
     }
     
     // User is authenticated, proceed with normal rendering
-    console.log('✅ User is authenticated, proceeding with render');
+    if (window.log) {
+        window.log.debug('User is authenticated, proceeding with render', 'Renderer');
+    }
     actualRenderMarkdown(markdownText);
 }
 
@@ -213,13 +256,39 @@ function actualRenderMarkdown(markdownText) {
     const loadingIndicator = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     
+    // Validate input
+    if (!markdownText || typeof markdownText !== 'string') {
+        if (window.log) {
+            window.log.error('Invalid markdown text provided to actualRenderMarkdown', 'Renderer', {
+                markdownText: markdownText,
+                type: typeof markdownText
+            });
+        }
+        preview.innerHTML = '<p style="color: #ef4444; text-align: center; font-style: italic;">No content to render</p>';
+        loadingIndicator.style.display = 'none';
+        return;
+    }
+    
+    // Trim whitespace and check if empty
+    const trimmedText = markdownText.trim();
+    if (!trimmedText) {
+        preview.innerHTML = '<p style="color: #64748b; text-align: center; font-style: italic;">Preview will appear here...</p>';
+        loadingIndicator.style.display = 'none';
+        return;
+    }
+    
     loadingIndicator.style.display = 'block';
     loadingText.textContent = 'Rendering markdown...';
     
     setTimeout(() => {
         try {
-            // Convert markdown to HTML
-            const html = marked.parse(markdownText);
+            // Check if marked is available
+            if (typeof marked === 'undefined' || typeof marked.parse !== 'function') {
+                throw new Error('Markdown parser (marked.js) is not loaded. Please refresh the page.');
+            }
+            
+            // Convert markdown to HTML with validated input
+            const html = marked.parse(trimmedText);
             preview.innerHTML = html;
             
             // Render mermaid diagrams
@@ -229,43 +298,63 @@ function actualRenderMarkdown(markdownText) {
                 mermaid.init(undefined, mermaidElements);
             }
             
-            // Debug: Log current heading styles after rendering
-            console.log('=== After Render Debug ===');
-            const headings = preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            headings.forEach((heading, index) => {
-                const computedStyle = window.getComputedStyle(heading);
-                console.log(`Rendered Heading ${heading.tagName} #${index}:`, {
-                    background: computedStyle.background,
-                    backgroundColor: computedStyle.backgroundColor,
-                    backgroundImage: computedStyle.backgroundImage,
-                    backgroundClip: computedStyle.backgroundClip,
-                    webkitBackgroundClip: computedStyle.webkitBackgroundClip,
-                    color: computedStyle.color,
-                    textContent: heading.textContent.substring(0, 50)
+            // Debug heading styles in development only
+            if (window.log && window.appConfig?.get('development.debug')) {
+                window.log.group('Render Debug - Heading Styles', 'Renderer');
+                const headings = preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                headings.forEach((heading, index) => {
+                    const computedStyle = window.getComputedStyle(heading);
+                    window.log.trace(`Heading ${heading.tagName} #${index}`, 'Renderer', {
+                        background: computedStyle.background,
+                        backgroundColor: computedStyle.backgroundColor,
+                        backgroundImage: computedStyle.backgroundImage,
+                        textContent: heading.textContent.substring(0, 50)
+                    });
                 });
-            });
+                window.log.groupEnd();
+            }
             
             loadingIndicator.style.display = 'none';
             
             // Track successful rendering with Google Analytics
             if (typeof trackRendering === 'function') {
-                trackRendering('button', markdownText.length);
+                trackRendering('button', trimmedText.length);
             }
             
             // Track authenticated rendering
             if (typeof window.authManager !== 'undefined' && window.authManager.isAuthenticated()) {
-                console.log('📊 Authenticated user rendered markdown');
+                if (window.log) {
+                    window.log.debug('Authenticated user rendered markdown', 'Renderer');
+                }
                 if (typeof gtag === 'function') {
                     gtag('event', 'authenticated_render', {
                         user_id: window.authManager.getUserId(),
-                        content_length: markdownText.length
+                        content_length: trimmedText.length
                     });
                 }
             }
         } catch (error) {
-            console.error('Rendering error:', error);
+            if (window.log) {
+                window.log.error('Rendering error', 'Renderer', error);
+            }
+            
+            let errorMessage = 'Unknown rendering error';
+            if (error.message) {
+                if (error.message.includes('marked(): input parameter is undefined or null')) {
+                    errorMessage = 'No content provided to render. Please enter some markdown text.';
+                } else if (error.message.includes('marked')) {
+                    errorMessage = 'Markdown parsing error: ' + error.message.replace(/marked\(\): /, '');
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
             preview.innerHTML = `<div style="color: #ef4444; padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
-                <strong>Rendering Error:</strong> ${error.message}
+                <strong>Rendering Error:</strong> ${errorMessage}
+                <br><br>
+                <small style="color: #7f1d1d;">
+                    If this error persists, try refreshing the page or check the console for more details.
+                </small>
             </div>`;
             loadingIndicator.style.display = 'none';
         }

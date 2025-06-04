@@ -321,6 +321,23 @@ window.errorTracker = new ErrorTracker();
 
 // Utility functions
 window.debugMisterMD = function() {
+    const isProduction = window.appConfig?.get('app.environment') === 'production';
+    
+    if (isProduction) {
+        console.log('MisterMD Debug (Production Mode - Limited Output)');
+        console.log('Environment:', window.appConfig?.get('app.environment'));
+        console.log('Version:', window.appConfig?.get('app.version'));
+        
+        // Only show errors in production
+        const errorReport = window.errorTracker.getErrorReport();
+        if (errorReport.totalErrors > 0) {
+            console.warn('Total errors:', errorReport.totalErrors);
+            console.warn('Recent errors:', errorReport.recentErrors.slice(-3));
+        }
+        return;
+    }
+    
+    // Full debug in development
     console.clear();
     console.log('🚀 MisterMD Debug Information');
     console.log('=====================================');
@@ -343,4 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
 });
 
-console.log('🛠️ Utilities loaded. Call debugMisterMD() for debug information.');
+if (window.log && window.appConfig?.get('development.debug')) {
+    window.log.debug('Utilities loaded. Call debugMisterMD() for debug information.', 'Utils');
+}

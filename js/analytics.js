@@ -15,7 +15,9 @@ class Analytics {
         if (typeof window.appConfig !== 'undefined') {
             this.config = window.appConfig;
             this.isEnabled = this.config.get('analytics.enabled', true);
-            console.log('✅ Analytics: Configuration loaded, enabled:', this.isEnabled);
+            if (window.log) {
+                window.log.info(`Configuration loaded, enabled: ${this.isEnabled}`, 'Analytics');
+            }
         } else {
             setTimeout(() => this.waitForConfig(), 100);
         }
@@ -100,5 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Track initial page view
   trackPageView();
   
-  console.log('Analytics tracking initialized');
+  if (window.log) {
+    window.log.info('Analytics tracking initialized', 'Analytics');
+  }
 });

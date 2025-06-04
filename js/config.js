@@ -147,10 +147,24 @@ class AppConfig {
 
             // Development settings
             development: {
-                debug: false,
+                debug: false, // Set to true only in development
                 verbose: false,
                 mockAuth: false,
                 skipAnalytics: false
+            },
+
+            // Logging configuration
+            logging: {
+                level: 'info', // error, warn, info, debug, trace
+                enableConsole: true,
+                enableStorage: true,
+                maxStoredLogs: 100,
+                enableAnalytics: true, // Send errors to analytics
+                production: {
+                    level: 'warn',
+                    enableConsole: false, // Disable most console logs in production
+                    silentStart: true // Minimal startup messages
+                }
             },
 
             // Feature flags
@@ -188,6 +202,20 @@ class AppConfig {
      * Detect the current environment
      */
     detectEnvironment() {
+        // Check for URL parameter override
+        const urlParams = new URLSearchParams(window.location.search);
+        const envParam = urlParams.get('env');
+        if (envParam && ['development', 'staging', 'production'].includes(envParam)) {
+            return envParam;
+        }
+        
+        // Check for localStorage override (persistent)
+        const storedEnv = localStorage.getItem('mistermd_env');
+        if (storedEnv && ['development', 'staging', 'production'].includes(storedEnv)) {
+            return storedEnv;
+        }
+        
+        // Automatic detection based on hostname
         const hostname = window.location.hostname;
         
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('local')) {
@@ -372,11 +400,90 @@ class AppConfig {
             version: this.get('app.version'),
             features: this.get('features'),
             debug: this.get('development.debug'),
+            logging: {
+                level: this.get('logging.level'),
+                console: this.get('logging.enableConsole')
+            },
             analytics: {
                 enabled: this.get('analytics.enabled'),
                 trackingId: this.get('google.analytics.trackingId')
             }
         };
+    }
+
+    /**
+     * Set environment (with persistence)
+     */
+    setEnvironment(env) {
+        if (!['development', 'staging', 'production'].includes(env)) {
+            throw new Error('Invalid environment. Must be: development, staging, or production');
+        }
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('mistermd_env', env);
+        
+        // Update config
+        this.set('app.environment', env);
+        
+        // Apply environment-specific settings
+        this.applyEnvironmentSettings(env);
+        
+        console.log(`Environment changed to: ${env}`);
+        console.log('Reload the page to apply all changes.');
+    }
+
+    /**
+     * Set debug mode
+     */
+    setDebugMode(enabled) {
+        this.set('development.debug', enabled);
+        
+        if (window.logger) {
+            window.logger.logLevel = enabled ? 'debug' : 'info';
+        }
+        
+        console.log(`Debug mode ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    /**
+     * Set log level
+     */
+    setLogLevel(level) {
+        const validLevels = ['error', 'warn', 'info', 'debug', 'trace'];
+        if (!validLevels.includes(level)) {
+            throw new Error(`Invalid log level. Must be one of: ${validLevels.join(', ')}`);
+        }
+        
+        this.set('logging.level', level);
+        
+        if (window.logger) {
+            window.logger.logLevel = level;
+        }
+        
+        console.log(`Log level set to: ${level}`);
+    }
+
+    /**
+     * Apply environment-specific settings
+     */
+    applyEnvironmentSettings(env) {
+        switch (env) {
+            case 'development':
+                this.set('development.debug', true);
+                this.set('logging.level', 'debug');
+                this.set('logging.enableConsole', true);
+                break;
+            case 'staging':
+                this.set('development.debug', true);
+                this.set('logging.level', 'info');
+                this.set('logging.enableConsole', true);
+                break;
+            case 'production':
+                this.set('development.debug', false);
+                this.set('logging.level', 'warn');
+                this.set('logging.enableConsole', false);
+                break;
+        }
     }
 }
 
@@ -388,5 +495,27 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = AppConfig;
 }
 
+// Convenient global functions for runtime configuration
+window.setEnvironment = (env) => window.appConfig.setEnvironment(env);
+window.setDebugMode = (enabled) => window.appConfig.setDebugMode(enabled);
+window.setLogLevel = (level) => window.appConfig.setLogLevel(level);
+window.getEnvironment = () => window.appConfig.get('app.environment');
+window.getLogLevel = () => window.appConfig.get('logging.level');
+
 console.log('🔧 Application configuration loaded');
-console.log('📊 Debug Info:', window.appConfig.getDebugInfo());
+
+// Show current environment info
+const env = window.appConfig.get('app.environment');
+const version = window.appConfig.get('app.version');
+
+if (env === 'production') {
+    console.log(`MisterMD v${version} - Production`);
+} else {
+    console.log(`🚀 MisterMD v${version} - ${env.toUpperCase()}`);
+    console.log('📊 Debug Info:', window.appConfig.getDebugInfo());
+    console.log('💡 Runtime commands available:');
+    console.log('  - setEnvironment("development|staging|production")');
+    console.log('  - setDebugMode(true|false)');
+    console.log('  - setLogLevel("error|warn|info|debug|trace")');
+    console.log('  - debugMisterMD() for full debug info');
+}
