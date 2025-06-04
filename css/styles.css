@@ -298,9 +298,97 @@ body {
     transform: scale(1.1);
 }
 
-/* Auth container for Google button */
+/* Modern, eye-catching auth container */
 .auth-container {
-    margin-top: 8px;
+    margin-top: 16px;
+    padding: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+    background-size: 400% 400%;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3), 0 0 20px rgba(245, 87, 108, 0.2);
+    animation: gradientWave 4s ease-in-out infinite, pulseGlow 3s ease-in-out infinite alternate;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 3s linear infinite;
+    pointer-events: none;
+}
+
+.auth-container::after {
+    content: '✨ Premium Experience Awaits! ✨';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24);
+    background-size: 300% 300%;
+    animation: gradientWave 2s ease-in-out infinite;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+    animation: float 2s ease-in-out infinite, gradientWave 3s ease-in-out infinite;
+}
+
+/* Enhanced Google button styling - oval design */
+.auth-container > div,
+.auth-container div[role="button"] {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: none !important;
+    border-radius: 50px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: scale(1.05) !important;
+}
+
+.auth-container > div:hover,
+.auth-container div[role="button"]:hover {
+    transform: scale(1.1) translateY(-2px) !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2), 0 6px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Keep Google button simple - remove colorful circle */
+
+/* Keyframe animations */
+@keyframes gradientWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlow {
+    0% { 
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3), 0 0 20px rgba(245, 87, 108, 0.2);
+    }
+    100% { 
+        box-shadow: 0 15px 60px rgba(102, 126, 234, 0.5), 0 0 30px rgba(245, 87, 108, 0.4), 0 0 50px rgba(79, 172, 254, 0.3);
+    }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-8px); }
 }
 
 /* Responsive design for circular auth button */
@@ -331,6 +419,20 @@ body {
     .user-dropdown::before {
         right: 50px;
     }
+    
+    /* Responsive auth container */
+    .auth-container {
+        margin-top: 12px;
+        padding: 20px;
+        border-radius: 16px;
+    }
+    
+    .auth-container::after {
+        font-size: 11px;
+        padding: 8px 16px;
+        top: -35px;
+    }
+    
 }
 
 @media (max-width: 480px) {
@@ -387,6 +489,25 @@ body {
         font-size: 13px;
         border-radius: 10px;
     }
+    
+    /* Mobile auth container */
+    .auth-container {
+        margin-top: 10px;
+        padding: 16px;
+        border-radius: 12px;
+    }
+    
+    .auth-container::after {
+        font-size: 10px;
+        padding: 6px 12px;
+        top: -30px;
+    }
+    
+    .auth-container > div,
+    .auth-container div[role="button"] {
+        transform: scale(1) !important;
+    }
+    
 }
 
 h1 {
