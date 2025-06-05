@@ -358,21 +358,43 @@ class AdvancedExportSystem {
     async selectPNGStrategy(element) {
         const analysis = this.analyzeContent(element);
         
+        if (window.log) {
+            window.log.debug('PNG strategy analysis', 'Export', analysis);
+        }
+        
         // For very large content, use tiled rendering
         if (analysis.estimatedCanvasSize > this.options.maxCanvasSize) {
+            if (window.log) {
+                window.log.info('Using tiled PNG strategy for very large content', 'Export', {
+                    canvasSize: analysis.estimatedCanvasSize,
+                    maxAllowed: this.options.maxCanvasSize
+                });
+            }
             return 'tiled';
         }
         
         // For high memory usage, use smart chunking
         if (analysis.estimatedMemory > this.options.maxMemoryUsage) {
+            if (window.log) {
+                window.log.info('Using smart PNG strategy for high memory content', 'Export', {
+                    estimatedMemory: Math.round(analysis.estimatedMemory / 1024 / 1024) + 'MB',
+                    maxAllowed: Math.round(this.options.maxMemoryUsage / 1024 / 1024) + 'MB'
+                });
+            }
             return 'smart';
         }
         
         // For simple content, use single capture
         if (analysis.height < 5000 && !analysis.hasComplexElements) {
+            if (window.log) {
+                window.log.debug('Using single PNG strategy for simple content', 'Export');
+            }
             return 'single';
         }
         
+        if (window.log) {
+            window.log.debug('Using smart PNG strategy as default', 'Export');
+        }
         return 'smart';
     }
 
@@ -1187,7 +1209,7 @@ class AdvancedExportSystem {
     }
 
     /**
-     * Download canvas as image
+     * Download canvas as image with enhanced large canvas handling
      */
     async downloadCanvas(canvas, filename, format = 'png') {
         return new Promise((resolve, reject) => {
@@ -1195,60 +1217,31 @@ class AdvancedExportSystem {
                 // Store this for use in callbacks
                 const self = this;
                 
-                // For very large canvases, use a different approach
-                if (canvas.width * canvas.height > 16777216) { // 4096 x 4096 threshold
-                    console.log('Large canvas detected, using alternative export method');
-                    // Show a message to the user suggesting PDF export for large content
-                    setTimeout(() => {
-                        alert('Large content detected. If the PNG export quality is not satisfactory, try exporting to PDF instead for better results with large documents.');
-                    }, 1000);
-                    try {
-                        // Try using dataURL with reduced quality for large canvases
-                        const quality = format === 'png' ? 0.9 : 0.7; // Increased quality for PNG
-                        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-                        
-                        // Use dataURL instead of blob for large canvases
-                        const dataUrl = canvas.toDataURL(mimeType, quality);
-                        
-                        // Verify dataUrl is not empty
-                        if (dataUrl.length <= 22) { // "data:image/png;base64," is 22 chars
-                            throw new Error("Generated dataURL is empty");
-                        }
-                        
-                        const link = document.createElement('a');
-                        link.download = filename;
-                        link.href = dataUrl;
-                        document.body.appendChild(link); // Append to body for Firefox
-                        link.click();
-                        
-                        // Cleanup
-                        setTimeout(() => {
-                            document.body.removeChild(link);
-                            // Report success after download starts
-                            if (self.reportSuccess) {
-                                self.reportSuccess(filename);
-                            }
-                        }, 1000);
-                        
-                        resolve(filename);
-                    } catch (dataUrlError) {
-                        console.error('DataURL method failed:', dataUrlError);
-                        // Fall back to JPEG with even lower quality
-                        self.fallbackImageDownload(canvas, filename);
-                        resolve(filename);
-                    }
-                    return;
+                // Calculate canvas pixel count and memory usage
+                const pixelCount = canvas.width * canvas.height;
+                const memoryUsage = pixelCount * 4; // RGBA
+                const maxSafePixels = 16777216; // 4096 x 4096 - browser limit
+                const maxSafeMemory = 268435456; // 256MB
+                
+                console.log(`Canvas analysis: ${canvas.width}x${canvas.height} (${pixelCount} pixels, ${Math.round(memoryUsage / 1024 / 1024)}MB)`);
+                
+                // Determine if we need special handling
+                const isLargeCanvas = pixelCount > maxSafePixels || memoryUsage > maxSafeMemory;
+                
+                if (isLargeCanvas) {
+                    console.log('Large canvas detected, using specialized export method');
+                    return this.handleLargeCanvasDownload(canvas, filename, format, resolve, reject);
                 }
                 
                 // Standard approach for normal-sized canvases
                 const quality = format === 'png' ? (this.options?.pngQuality || 0.9) : 0.9;
                 const mimeType = `image/${format}`;
                 
+                // Try blob method first (most reliable for normal canvases)
                 canvas.toBlob(function(blob) {
                     if (!blob || blob.size === 0) {
-                        console.warn('Blob creation failed or empty blob, trying alternative method');
-                        self.fallbackImageDownload(canvas, filename);
-                        resolve(filename);
+                        console.warn('Blob creation failed, trying dataURL method');
+                        self.tryDataURLDownload(canvas, filename, format, resolve, reject);
                         return;
                     }
                     
@@ -1256,7 +1249,7 @@ class AdvancedExportSystem {
                     const link = document.createElement('a');
                     link.download = filename;
                     link.href = url;
-                    document.body.appendChild(link); // Append to body for Firefox
+                    document.body.appendChild(link);
                     link.click();
                     
                     // Cleanup
@@ -1271,11 +1264,222 @@ class AdvancedExportSystem {
                 }, mimeType, quality);
             } catch (error) {
                 console.error('Canvas download error:', error);
-                // Try fallback method
-                this.fallbackImageDownload(canvas, filename);
-                resolve(filename);
+                this.tryDataURLDownload(canvas, filename, format, resolve, reject);
             }
         });
+    }
+
+    /**
+     * Handle large canvas downloads with multiple fallback strategies
+     */
+    async handleLargeCanvasDownload(canvas, filename, format, resolve, reject) {
+        const self = this;
+        
+        if (window.log) {
+            window.log.warn('Large canvas detected for PNG export', 'Export', {
+                width: canvas.width,
+                height: canvas.height,
+                pixels: canvas.width * canvas.height,
+                estimatedMemory: Math.round((canvas.width * canvas.height * 4) / 1024 / 1024) + 'MB'
+            });
+        }
+        
+        // Strategy 1: Try chunked/tiled approach first
+        try {
+            console.log('Attempting chunked download for large canvas');
+            if (window.log) {
+                window.log.info('Attempting chunked PNG export for large canvas', 'Export');
+            }
+            await this.downloadLargeCanvasChunked(canvas, filename, format);
+            if (window.log) {
+                window.log.info('Chunked PNG export succeeded', 'Export');
+            }
+            if (self.reportSuccess) {
+                self.reportSuccess(filename);
+            }
+            resolve(filename);
+            return;
+        } catch (chunkedError) {
+            console.warn('Chunked download failed:', chunkedError);
+            if (window.log) {
+                window.log.warn('Chunked PNG export failed', 'Export', chunkedError);
+            }
+        }
+        
+        // Strategy 2: Try reduced quality PNG
+        try {
+            console.log('Attempting reduced quality PNG export');
+            const dataUrl = canvas.toDataURL('image/png', 0.5);
+            if (dataUrl && dataUrl.length > 22) {
+                this.downloadFromDataURL(dataUrl, filename);
+                if (self.reportSuccess) {
+                    self.reportSuccess(filename);
+                }
+                resolve(filename);
+                return;
+            }
+        } catch (pngError) {
+            console.warn('Reduced quality PNG failed:', pngError);
+        }
+        
+        // Strategy 3: Try JPEG conversion
+        try {
+            console.log('Attempting JPEG conversion for large canvas');
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            if (jpegDataUrl && jpegDataUrl.length > 22) {
+                const jpegFilename = filename.replace(/\.png$/i, '.jpg');
+                this.downloadFromDataURL(jpegDataUrl, jpegFilename);
+                if (self.reportSuccess) {
+                    self.reportSuccess(jpegFilename);
+                }
+                alert('PNG export failed due to size. Downloaded as JPEG instead.');
+                resolve(jpegFilename);
+                return;
+            }
+        } catch (jpegError) {
+            console.warn('JPEG conversion failed:', jpegError);
+        }
+        
+        // Strategy 4: Create smaller version
+        try {
+            console.log('Creating smaller version of large canvas');
+            const smallCanvas = this.createSmallCanvas(canvas, 0.5);
+            const smallDataUrl = smallCanvas.toDataURL('image/png', 0.8);
+            if (smallDataUrl && smallDataUrl.length > 22) {
+                const smallFilename = filename.replace(/\.png$/i, '_small.png');
+                this.downloadFromDataURL(smallDataUrl, smallFilename);
+                if (self.reportSuccess) {
+                    self.reportSuccess(smallFilename);
+                }
+                alert('Original size too large. Downloaded smaller version instead.');
+                resolve(smallFilename);
+                return;
+            }
+        } catch (smallError) {
+            console.warn('Small canvas creation failed:', smallError);
+        }
+        
+        // All strategies failed
+        console.error('All large canvas download strategies failed');
+        alert('Export failed: Image too large to process. Try exporting smaller sections or use PDF export.');
+        reject(new Error('Large canvas export failed - all strategies exhausted'));
+    }
+
+    /**
+     * Try dataURL download method
+     */
+    tryDataURLDownload(canvas, filename, format, resolve, reject) {
+        try {
+            const quality = format === 'png' ? 0.9 : 0.7;
+            const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+            const dataUrl = canvas.toDataURL(mimeType, quality);
+            
+            if (!dataUrl || dataUrl.length <= 22) {
+                throw new Error('Generated dataURL is empty');
+            }
+            
+            this.downloadFromDataURL(dataUrl, filename);
+            if (this.reportSuccess) {
+                this.reportSuccess(filename);
+            }
+            resolve(filename);
+        } catch (error) {
+            console.error('DataURL download failed:', error);
+            this.fallbackImageDownload(canvas, filename);
+            resolve(filename);
+        }
+    }
+
+    /**
+     * Download image from dataURL
+     */
+    downloadFromDataURL(dataUrl, filename) {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            if (document.body.contains(link)) {
+                document.body.removeChild(link);
+            }
+        }, 1000);
+    }
+
+    /**
+     * Create a smaller version of a large canvas
+     */
+    createSmallCanvas(originalCanvas, scaleFactor = 0.5) {
+        const smallCanvas = document.createElement('canvas');
+        const smallCtx = smallCanvas.getContext('2d');
+        
+        smallCanvas.width = Math.floor(originalCanvas.width * scaleFactor);
+        smallCanvas.height = Math.floor(originalCanvas.height * scaleFactor);
+        
+        // Use high-quality scaling
+        smallCtx.imageSmoothingEnabled = true;
+        smallCtx.imageSmoothingQuality = 'high';
+        
+        smallCtx.drawImage(
+            originalCanvas,
+            0, 0, originalCanvas.width, originalCanvas.height,
+            0, 0, smallCanvas.width, smallCanvas.height
+        );
+        
+        return smallCanvas;
+    }
+
+    /**
+     * Download large canvas using chunked approach
+     */
+    async downloadLargeCanvasChunked(canvas, filename, format) {
+        const chunkSize = 2048; // Smaller chunks for better memory management
+        const chunksX = Math.ceil(canvas.width / chunkSize);
+        const chunksY = Math.ceil(canvas.height / chunkSize);
+        
+        // Create a new canvas to combine chunks
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = canvas.width;
+        finalCanvas.height = canvas.height;
+        const finalCtx = finalCanvas.getContext('2d');
+        
+        // Process in chunks
+        for (let y = 0; y < chunksY; y++) {
+            for (let x = 0; x < chunksX; x++) {
+                const chunkX = x * chunkSize;
+                const chunkY = y * chunkSize;
+                const chunkWidth = Math.min(chunkSize, canvas.width - chunkX);
+                const chunkHeight = Math.min(chunkSize, canvas.height - chunkY);
+                
+                // Create temporary canvas for this chunk
+                const chunkCanvas = document.createElement('canvas');
+                chunkCanvas.width = chunkWidth;
+                chunkCanvas.height = chunkHeight;
+                const chunkCtx = chunkCanvas.getContext('2d');
+                
+                // Copy chunk from original canvas
+                chunkCtx.drawImage(
+                    canvas,
+                    chunkX, chunkY, chunkWidth, chunkHeight,
+                    0, 0, chunkWidth, chunkHeight
+                );
+                
+                // Draw chunk to final canvas
+                finalCtx.drawImage(chunkCanvas, chunkX, chunkY);
+                
+                // Small delay to prevent browser freezing
+                await this.delay(10);
+            }
+        }
+        
+        // Try to download the final canvas
+        const dataUrl = finalCanvas.toDataURL('image/png', 0.7);
+        if (!dataUrl || dataUrl.length <= 22) {
+            throw new Error('Chunked canvas export produced empty result');
+        }
+        
+        this.downloadFromDataURL(dataUrl, filename);
     }
     
     /**
@@ -1936,12 +2140,15 @@ async function downloadAsPngAdvanced() {
         loadingText.textContent = 'Generating high-quality PNG...';
     }
 
+    const config = window.appConfig;
     const exporter = new AdvancedExportSystem({
         pngStrategy: 'smart', // Auto-select best strategy
-        pngQuality: 0.9, // Reduced from 1.0 to improve compatibility
-        scale: 2, // Reduced from 3 to prevent canvas size issues
-        backgroundColor: '#ffffff',
-        maxMemoryUsage: 256 * 1024 * 1024, // Reduced memory limit for better stability
+        pngQuality: config.get('export.png.quality', 0.9),
+        scale: config.get('export.png.scale', 2),
+        backgroundColor: config.get('export.png.backgroundColor', '#ffffff'),
+        maxCanvasSize: config.get('export.png.maxCanvasSize', 16384),
+        maxMemoryUsage: config.get('export.png.maxMemoryUsage', 256 * 1024 * 1024),
+        tileSize: config.get('export.png.chunkSize', 2048),
         onProgress: ({ message, percentage }) => {
             if (useProgressUI) {
                 progressBar.style.width = percentage + '%';
@@ -1951,6 +2158,9 @@ async function downloadAsPngAdvanced() {
             }
         },
         onError: (error) => {
+            if (window.log) {
+                window.log.error('PNG export failed', 'Export', error);
+            }
             console.error('PNG export failed:', error);
             alert('PNG export failed: ' + error.message);
             if (useProgressUI) {

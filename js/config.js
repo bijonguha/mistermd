@@ -38,12 +38,16 @@ class AppConfig {
             // Export Configuration
             export: {
                 png: {
-                    quality: 1.0,
-                    scale: 3,
+                    quality: 0.9, // Reduced from 1.0 for better compatibility with large files
+                    scale: 2, // Reduced from 3 to prevent canvas memory issues
                     backgroundColor: '#ffffff',
-                    maxCanvasSize: 32767,
+                    maxCanvasSize: 16384, // Reduced from 32767 to prevent browser crashes
+                    maxMemoryUsage: 256 * 1024 * 1024, // 256MB limit for canvas operations
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    chunkSize: 2048, // For tiled rendering of very large content
+                    fallbackFormat: 'jpeg', // Format to use when PNG fails
+                    fallbackQuality: 0.7 // Quality for fallback format
                 },
                 pdf: {
                     quality: 0.95,
@@ -502,6 +506,60 @@ window.setLogLevel = (level) => window.appConfig.setLogLevel(level);
 window.getEnvironment = () => window.appConfig.get('app.environment');
 window.getLogLevel = () => window.appConfig.get('logging.level');
 
+// Help system
+window.showLoggingHelp = () => {
+    console.clear();
+    console.log('%c🚀 MisterMD Logging System - Quick Reference', 'font-size: 16px; font-weight: bold; color: #4A76C4;');
+    console.log('');
+    
+    console.log('%c📊 Current Status', 'font-weight: bold; color: #059669;');
+    console.log(`Environment: ${window.getEnvironment()}`);
+    console.log(`Log Level: ${window.getLogLevel()}`);
+    console.log(`Debug Mode: ${window.appConfig.get('development.debug')}`);
+    console.log('');
+    
+    console.log('%c🎯 Change Environment', 'font-weight: bold; color: #DC2626;');
+    console.log('setEnvironment("development")  // Full debug mode');
+    console.log('setEnvironment("staging")      // Testing mode');
+    console.log('setEnvironment("production")   // Minimal logging');
+    console.log('');
+    
+    console.log('%c📈 Change Log Level', 'font-weight: bold; color: #7C2D12;');
+    console.log('setLogLevel("error")    // Only errors');
+    console.log('setLogLevel("warn")     // Errors + warnings');
+    console.log('setLogLevel("info")     // Errors + warnings + info');
+    console.log('setLogLevel("debug")    // Everything except trace');
+    console.log('setLogLevel("trace")    // Everything');
+    console.log('');
+    
+    console.log('%c🔧 Debug Commands', 'font-weight: bold; color: #7C3AED;');
+    console.log('setDebugMode(true)      // Enable debug output');
+    console.log('debugMisterMD()         // Full application debug');
+    console.log('debugRenderer()         // Renderer-specific debug');
+    console.log('showLoggingHelp()       // Show this help');
+    console.log('');
+    
+    console.log('%c🚨 Quick Fixes', 'font-weight: bold; color: #EA580C;');
+    console.log('// No logs showing?');
+    console.log('setLogLevel("debug"); setDebugMode(true);');
+    console.log('');
+    console.log('// Too many logs?');
+    console.log('setLogLevel("warn"); setEnvironment("production");');
+    console.log('');
+    console.log('// Need full debug?');
+    console.log('setEnvironment("development"); debugMisterMD();');
+    console.log('');
+    
+    console.log('%c💡 Pro Tips', 'font-style: italic; color: #6B7280;');
+    console.log('• All changes persist across page reloads');
+    console.log('• Use URL parameter ?env=development for temporary testing');
+    console.log('• Production mode automatically reports errors to analytics');
+    console.log('• See LOGGING.md for complete documentation');
+};
+
+// Alias for convenience
+window.logHelp = window.showLoggingHelp;
+
 console.log('🔧 Application configuration loaded');
 
 // Show current environment info
@@ -518,4 +576,5 @@ if (env === 'production') {
     console.log('  - setDebugMode(true|false)');
     console.log('  - setLogLevel("error|warn|info|debug|trace")');
     console.log('  - debugMisterMD() for full debug info');
+    console.log('  - showLoggingHelp() or logHelp() for quick reference');
 }
