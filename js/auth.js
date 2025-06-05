@@ -5,37 +5,66 @@ class AuthManager {
     constructor() {
         this.user = null;
         this.isInitialized = false;
-        this.clientId = '416699519304-7n5488jfl10dv2sjjdonmc7sbf09vobn.apps.googleusercontent.com';
+        this.config = null;
         this.callbacks = {
             onSignIn: [],
             onSignOut: []
         };
+        
+        // Wait for config to be available
+        this.waitForConfig();
+    }
+    
+    /**
+     * Wait for configuration to be loaded
+     */
+    waitForConfig() {
+        if (typeof window.appConfig !== 'undefined') {
+            this.config = window.appConfig;
+            if (window.log) {
+                window.log.info('Configuration loaded', 'Auth');
+            }
+        } else {
+            setTimeout(() => this.waitForConfig(), 100);
+        }
     }
 
     // Initialize Google Identity Services
     async initialize() {
-        console.log('🚀 Starting authentication initialization...');
+        if (window.log) {
+            window.log.info('Starting authentication initialization', 'Auth');
+        }
         return new Promise((resolve, reject) => {
-            // Wait for Google Identity Services to load
-            if (typeof google === 'undefined') {
-                console.log('⏳ Waiting for Google Identity Services...');
+            // Wait for configuration and Google Identity Services to load
+            if (!this.config || typeof google === 'undefined') {
+                if (window.log) {
+                    window.log.debug('Waiting for configuration and Google Identity Services', 'Auth');
+                }
                 setTimeout(() => this.initialize().then(resolve).catch(reject), 500);
                 return;
             }
 
-            console.log('✅ Google object found');
-            console.log('🔧 Client ID:', this.clientId);
+            const clientId = this.config.get('google.clientId');
+            const autoSelect = this.config.get('google.auth.autoSelect');
+            const cancelOnTapOutside = this.config.get('google.auth.cancelOnTapOutside');
+
+            if (window.log) {
+                window.log.debug('Google Identity Services available', 'Auth');
+                window.log.debug(`Environment: ${this.config.get('app.environment')}`, 'Auth');
+            }
 
             try {
                 google.accounts.id.initialize({
-                    client_id: this.clientId,
+                    client_id: clientId,
                     callback: (response) => this.handleCredentialResponse(response),
-                    auto_select: false,
-                    cancel_on_tap_outside: true
+                    auto_select: autoSelect,
+                    cancel_on_tap_outside: cancelOnTapOutside
                 });
 
                 this.isInitialized = true;
-                console.log('✅ Google Identity Services initialized');
+                if (window.log) {
+                    window.log.info('Google Identity Services initialized', 'Auth');
+                }
                 
                 // Check for existing session and update UI
                 this.loadUserFromStorage();
@@ -43,7 +72,9 @@ class AuthManager {
                 
                 resolve();
             } catch (error) {
-                console.error('💥 Failed to initialize Google Identity Services:', error);
+                if (window.log) {
+                    window.log.error('Failed to initialize Google Identity Services', 'Auth', error);
+                }
                 reject(error);
             }
         });
@@ -67,7 +98,9 @@ class AuthManager {
             this.updateUI();
             this.triggerCallbacks('onSignIn', user);
 
-            console.log('User signed in:', user.name);
+            if (window.log) {
+                window.log.info(`User signed in: ${user.name}`, 'Auth');
+            }
             
             // Track sign-in with Google Analytics
             if (typeof gtag === 'function') {
@@ -77,7 +110,9 @@ class AuthManager {
                 });
             }
         } catch (error) {
-            console.error('Error handling credential response:', error);
+            if (window.log) {
+                window.log.error('Error handling credential response', 'Auth', error);
+            }
         }
     }
 
@@ -91,30 +126,39 @@ class AuthManager {
             }).join(''));
             return JSON.parse(jsonPayload);
         } catch (error) {
-            console.error('Error parsing JWT:', error);
+            if (window.log) {
+                window.log.error('Error parsing JWT', 'Auth', error);
+            }
             return null;
         }
     }
 
     // Show Google sign-in prompt
     signIn() {
-        console.log('🔐 signIn() called');
-        console.log('🔍 Auth initialized:', this.isInitialized);
-        console.log('🌐 Google available:', typeof google !== 'undefined');
+        if (window.log) {
+            window.log.debug('signIn() called', 'Auth');
+            window.log.debug(`Auth initialized: ${this.isInitialized}, Google available: ${typeof google !== 'undefined'}`, 'Auth');
+        }
         
         if (!this.isInitialized) {
-            console.error('❌ Auth not initialized');
+            if (window.log) {
+                window.log.error('Authentication not initialized', 'Auth');
+            }
             alert('Authentication not ready. Please refresh the page.');
             return;
         }
 
         if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
-            console.error('❌ Google Identity Services not loaded');
+            if (window.log) {
+                window.log.error('Google Identity Services not loaded', 'Auth');
+            }
             alert('Google services not loaded. Please refresh the page.');
             return;
         }
 
-        console.log('✅ Attempting Google sign-in...');
+        if (window.log) {
+            window.log.debug('Attempting Google sign-in', 'Auth');
+        }
 
         // Always clear auth container first
         const authContainer = document.getElementById('auth-container');
@@ -126,18 +170,28 @@ class AuthManager {
         // Try to show the prompt
         try {
             google.accounts.id.prompt((notification) => {
-                console.log('📱 Google prompt result:', notification);
+                if (window.log) {
+                    window.log.debug('Google prompt result received', 'Auth');
+                }
                 if (notification.isNotDisplayed()) {
-                    console.log('🚫 Prompt blocked - showing fallback');
+                    if (window.log) {
+                        window.log.debug('Prompt blocked - showing fallback', 'Auth');
+                    }
                     setTimeout(() => this.renderSignInButton(), 100);
                 } else if (notification.isSkippedMoment()) {
-                    console.log('👤 User dismissed prompt');
+                    if (window.log) {
+                        window.log.debug('User dismissed prompt', 'Auth');
+                    }
                 } else {
-                    console.log('✅ Prompt shown successfully');
+                    if (window.log) {
+                        window.log.debug('Prompt shown successfully', 'Auth');
+                    }
                 }
             });
         } catch (error) {
-            console.error('💥 Error with Google prompt:', error);
+            if (window.log) {
+                window.log.error('Error with Google prompt', 'Auth', error);
+            }
             setTimeout(() => this.renderSignInButton(), 100);
         }
     }
@@ -161,7 +215,9 @@ class AuthManager {
                 
                 authContainer.style.display = 'block';
             } catch (error) {
-                console.error('Error rendering Google button:', error);
+                if (window.log) {
+                    window.log.error('Error rendering Google button', 'Auth', error);
+                }
             }
         }
     }
@@ -173,7 +229,9 @@ class AuthManager {
         this.updateUI();
         this.triggerCallbacks('onSignOut');
 
-        console.log('User signed out');
+        if (window.log) {
+            window.log.info('User signed out', 'Auth');
+        }
         
         // Track sign-out with Google Analytics
         if (typeof gtag === 'function') {
@@ -190,40 +248,54 @@ class AuthManager {
                 ...user,
                 timestamp: Date.now()
             };
-            localStorage.setItem('mistermd_user', JSON.stringify(userData));
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            localStorage.setItem(storageKey, JSON.stringify(userData));
         } catch (error) {
-            console.error('Error saving user to storage:', error);
+            if (window.log) {
+                window.log.error('Error saving user to storage', 'Auth', error);
+            }
         }
     }
 
     // Load user from localStorage
     loadUserFromStorage() {
         try {
-            const userData = localStorage.getItem('mistermd_user');
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            const userData = localStorage.getItem(storageKey);
             if (userData) {
                 const user = JSON.parse(userData);
-                // Check if token is not too old (24 hours)
+                // Check if token is not too old
+                const sessionTimeout = this.config.get('google.auth.sessionTimeout', 24 * 60 * 60 * 1000);
                 const tokenAge = Date.now() - user.timestamp;
-                if (tokenAge < 24 * 60 * 60 * 1000) {
+                if (tokenAge < sessionTimeout) {
                     this.user = user;
                     this.updateUI();
-                    console.log('User loaded from storage:', user.name);
+                    if (window.log) {
+                        window.log.info(`User loaded from storage: ${user.name}`, 'Auth');
+                    }
                 } else {
-                    console.log('Stored user token expired');
+                    if (window.log) {
+                        window.log.debug('Stored user token expired', 'Auth');
+                    }
                     this.clearUserFromStorage();
                 }
             }
         } catch (error) {
-            console.error('Error loading user from storage:', error);
+            if (window.log) {
+                window.log.error('Error loading user from storage', 'Auth', error);
+            }
         }
     }
 
     // Clear user from localStorage
     clearUserFromStorage() {
         try {
-            localStorage.removeItem('mistermd_user');
+            const storageKey = this.config.get('google.auth.storageKey', 'mistermd_user');
+            localStorage.removeItem(storageKey);
         } catch (error) {
-            console.error('Error clearing user from storage:', error);
+            if (window.log) {
+                window.log.error('Error clearing user from storage', 'Auth', error);
+            }
         }
     }
 
@@ -320,7 +392,9 @@ class AuthManager {
             try {
                 callback(data);
             } catch (error) {
-                console.error(`Error in ${event} callback:`, error);
+                if (window.log) {
+                    window.log.error(`Error in ${event} callback`, 'Auth', error);
+                }
             }
         });
     }
@@ -388,4 +462,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('Auth module loaded');
+if (window.log) {
+    window.log.debug('Auth module loaded', 'Auth');
+}

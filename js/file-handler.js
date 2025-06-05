@@ -4,15 +4,27 @@ function handleFileUpload(event) {
     const fileName = document.getElementById('file-name');
     const markdownInput = document.getElementById('markdown-input');
     
+    // Get configuration
+    const config = window.appConfig;
+    
     const file = event.target.files[0];
     if (!file) return;
     
-    // Validate file type
-    const validTypes = ['.md', '.markdown', '.txt'];
+    // Validate file type using configuration
+    const validTypes = config ? config.get('files.allowedTypes', ['.md', '.markdown', '.txt']) : ['.md', '.markdown', '.txt'];
+    const maxSize = config ? config.get('files.maxSize', 10 * 1024 * 1024) : 10 * 1024 * 1024;
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
     if (!validTypes.includes(fileExtension)) {
-        alert('Please select a valid markdown file (.md, .markdown, .txt)');
+        alert(`Please select a valid markdown file (${validTypes.join(', ')})`);
+        fileInput.value = '';
+        return;
+    }
+    
+    // Validate file size
+    if (file.size > maxSize) {
+        const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+        alert(`File too large. Maximum size allowed is ${maxSizeMB}MB`);
         fileInput.value = '';
         return;
     }
