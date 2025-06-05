@@ -3,12 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Markdown and Mermaid Viewer</title>
+    
+    <!-- SEO Meta Tags -->
+    <title>MisterMD - Free Online Markdown & Mermaid Diagram Viewer | Export PDF & PNG</title>
+    <meta name="description" content="Free online markdown viewer with Mermaid diagram support. Render, preview, and export markdown files to high-quality PDF and PNG. Perfect for developers and technical writers.">
+    <meta name="keywords" content="markdown viewer, mermaid diagrams, markdown to pdf, markdown to png, online markdown editor, markdown preview, technical documentation, developer tools">
+    <meta name="author" content="MisterMD">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mistermd.vercel.app/">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mistermd.vercel.app/">
+    <meta property="og:title" content="MisterMD - Free Online Markdown & Mermaid Diagram Viewer">
+    <meta property="og:description" content="Free online markdown viewer with Mermaid diagram support. Export to PDF and PNG with professional quality.">
+    <meta property="og:site_name" content="MisterMD">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="MisterMD - Free Online Markdown & Mermaid Diagram Viewer">
+    <meta name="twitter:description" content="Free online markdown viewer with Mermaid diagram support. Export to PDF and PNG.">
+    
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#4A76C4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MisterMD">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="manifest" href="site.webmanifest">
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/markdown.css">
     <link rel="stylesheet" href="css/print.css">
+    <link rel="stylesheet" href="css/auth-styles.css">
     
     <!-- External Libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.8.0/styles/github.min.css">
@@ -22,13 +51,67 @@
 
       gtag('config', 'G-VKVMPPBDQL');
     </script>
+    
+    <!-- JSON-LD Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MisterMD",
+        "alternateName": "Enhanced Markdown and Mermaid Viewer",
+        "description": "Free online markdown viewer with Mermaid diagram support. Render, preview, and export markdown files to high-quality PDF and PNG.",
+        "url": "https://mistermd.vercel.app",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "MisterMD"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "MisterMD"
+        },
+        "featureList": [
+            "Markdown rendering and preview",
+            "Mermaid diagram support",
+            "PDF export functionality", 
+            "PNG export functionality",
+            "Real-time preview",
+            "File upload support",
+            "Syntax highlighting"
+        ],
+        "browserRequirements": "HTML5, JavaScript enabled"
+    }
+    </script>
+    
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="header">
-        <h1>The Markdown Viewer for AI-Powered Devs 🚀 </h1>
-        <p class="description">
-            Moder markdown viewer with high-quality rendering and export capabilities
-        </p>
+        <div class="header-content">
+            <div class="header-text">
+                <h1>The Markdown Viewer for AI-Powered Devs 🚀 </h1>
+                <p class="description">
+                    Moder markdown viewer with high-quality rendering and export capabilities
+                </p>
+            </div>
+            <div class="header-auth">
+                <button id="auth-button" class="auth-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
+                <div id="user-info" class="user-info"></div>
+                <div id="auth-container" class="auth-container"></div>
+            </div>
+        </div>
     </div>
     
     <div class="container">
@@ -132,11 +215,17 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     
     <!-- Import our JavaScript modules -->
+    <script src="js/config.js"></script>
+    <script src="js/logger.js"></script>
     <script src="js/analytics.js"></script>
+    <script src="js/seo-analytics.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/file-handler.js"></script>
     <script src="js/export.js"></script>
     <script src="js/examples.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/debug-renderer.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
