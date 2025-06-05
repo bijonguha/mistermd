@@ -1,0 +1,18 @@
+{
+    "name": "MisterMD - Markdown & Mermaid Viewer",
+    "short_name": "MisterMD",
+    "description": "Free online markdown viewer with Mermaid diagram support and export capabilities",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4A76C4",
+    "orientation": "portrait-primary",
+    "categories": ["productivity", "developer", "utilities"],
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "sizes": "16x16",
+            "type": "image/x-icon"
+        }
+    ]
+}

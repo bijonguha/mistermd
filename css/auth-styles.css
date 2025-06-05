@@ -1,0 +1,67 @@
+/* Avatar fallback styles */
+.user-avatar-fallback,
+.user-avatar-large-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #4A76C4, #5A87D4);
+    color: white;
+    font-weight: 600;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+.user-avatar-large-fallback {
+    width: 48px;
+    height: 48px;
+}
+
+.user-initials {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.user-initials-large {
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Existing avatar styles should work with fallback */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Auth button container should handle both image and fallback */
+.auth-button.signed-in {
+    position: relative;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* User details container in dropdown */
+.user-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.user-details > img,
+.user-details > .user-avatar-large-fallback {
+    flex-shrink: 0;
+}
