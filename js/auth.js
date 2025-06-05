@@ -10,9 +10,29 @@ class AuthManager {
             onSignIn: [],
             onSignOut: []
         };
+        this.browserInfo = this.detectBrowser();
         
         // Wait for config to be available
         this.waitForConfig();
+    }
+
+    /**
+     * Detect browser for Chrome-specific fixes
+     */
+    detectBrowser() {
+        const userAgent = navigator.userAgent;
+        const isChrome = /Chrome/.test(userAgent) && /Google Inc/.test(navigator.vendor);
+        const isEdge = /Edg/.test(userAgent);
+        const isFirefox = /Firefox/.test(userAgent);
+        const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+        
+        return {
+            isChrome,
+            isEdge,
+            isFirefox,
+            isSafari,
+            userAgent
+        };
     }
     
     /**
@@ -54,12 +74,26 @@ class AuthManager {
             }
 
             try {
-                google.accounts.id.initialize({
+                // Chrome-specific configuration
+                const initConfig = {
                     client_id: clientId,
                     callback: (response) => this.handleCredentialResponse(response),
-                    auto_select: autoSelect,
+                    auto_select: this.browserInfo.isChrome ? false : autoSelect, // Disable auto-select in Chrome
                     cancel_on_tap_outside: cancelOnTapOutside
-                });
+                };
+
+                // Add Chrome-specific settings
+                if (this.browserInfo.isChrome) {
+                    initConfig.use_fedcm_for_prompt = false; // Disable FedCM which can cause issues
+                    initConfig.itp_support = true; // Enable Intelligent Tracking Prevention support
+                }
+
+                if (window.log) {
+                    window.log.debug(`Browser detected: ${this.browserInfo.isChrome ? 'Chrome' : 'Other'}`, 'Auth');
+                    window.log.debug('Auth config:', 'Auth', initConfig);
+                }
+
+                google.accounts.id.initialize(initConfig);
 
                 this.isInitialized = true;
                 if (window.log) {
@@ -133,18 +167,19 @@ class AuthManager {
         }
     }
 
-    // Show Google sign-in prompt
+    // Show Google sign-in prompt with Chrome-specific handling
     signIn() {
         if (window.log) {
             window.log.debug('signIn() called', 'Auth');
             window.log.debug(`Auth initialized: ${this.isInitialized}, Google available: ${typeof google !== 'undefined'}`, 'Auth');
+            window.log.debug(`Browser: ${this.browserInfo.isChrome ? 'Chrome' : 'Other'}`, 'Auth');
         }
         
         if (!this.isInitialized) {
             if (window.log) {
                 window.log.error('Authentication not initialized', 'Auth');
             }
-            alert('Authentication not ready. Please refresh the page.');
+            this.showUserFriendlyError('Authentication not ready. Please refresh the page.');
             return;
         }
 
@@ -152,7 +187,7 @@ class AuthManager {
             if (window.log) {
                 window.log.error('Google Identity Services not loaded', 'Auth');
             }
-            alert('Google services not loaded. Please refresh the page.');
+            this.showUserFriendlyError('Google services not loaded. Please refresh the page.');
             return;
         }
 
@@ -167,12 +202,27 @@ class AuthManager {
             authContainer.style.display = 'none';
         }
 
-        // Try to show the prompt
+        // Chrome-specific approach: Skip the prompt and go directly to button
+        if (this.browserInfo.isChrome) {
+            if (window.log) {
+                window.log.debug('Chrome detected - using direct button approach', 'Auth');
+            }
+            setTimeout(() => this.renderSignInButton(), 50);
+            return;
+        }
+
+        // For non-Chrome browsers, try the prompt first
         try {
             google.accounts.id.prompt((notification) => {
                 if (window.log) {
                     window.log.debug('Google prompt result received', 'Auth');
+                    window.log.debug('Notification details:', 'Auth', {
+                        isNotDisplayed: notification.isNotDisplayed(),
+                        isSkippedMoment: notification.isSkippedMoment(),
+                        isDismissedMoment: notification.isDismissedMoment()
+                    });
                 }
+                
                 if (notification.isNotDisplayed()) {
                     if (window.log) {
                         window.log.debug('Prompt blocked - showing fallback', 'Auth');
@@ -181,6 +231,10 @@ class AuthManager {
                 } else if (notification.isSkippedMoment()) {
                     if (window.log) {
                         window.log.debug('User dismissed prompt', 'Auth');
+                    }
+                } else if (notification.isDismissedMoment()) {
+                    if (window.log) {
+                        window.log.debug('User dismissed popup', 'Auth');
                     }
                 } else {
                     if (window.log) {
@@ -196,30 +250,167 @@ class AuthManager {
         }
     }
 
-    // Render sign-in button as fallback
+    /**
+     * Show user-friendly error message
+     */
+    showUserFriendlyError(message) {
+        if (this.browserInfo.isChrome) {
+            // For Chrome, show more specific guidance
+            const chromeMessage = message + '\n\nChrome users: Please make sure third-party cookies are enabled and popup blockers are disabled for this site.';
+            alert(chromeMessage);
+        } else {
+            alert(message);
+        }
+    }
+
+    // Render sign-in button with Chrome-specific handling
     renderSignInButton() {
         const authContainer = document.getElementById('auth-container');
         if (authContainer && !this.user) {
             try {
                 authContainer.innerHTML = '';
                 
-                google.accounts.id.renderButton(
-                    authContainer,
-                    {
-                        theme: 'outline',
-                        size: 'medium',
-                        text: 'signin_with',
-                        width: 200
-                    }
-                );
+                // Chrome-specific button configuration
+                const buttonConfig = {
+                    theme: 'outline',
+                    size: 'medium',
+                    text: 'signin_with',
+                    width: 200
+                };
+
+                // Add Chrome-specific settings
+                if (this.browserInfo.isChrome) {
+                    buttonConfig.type = 'standard'; // Use standard type for better Chrome compatibility
+                    buttonConfig.shape = 'rectangular';
+                    buttonConfig.logo_alignment = 'left';
+                }
+
+                if (window.log) {
+                    window.log.debug('Rendering Google sign-in button', 'Auth', buttonConfig);
+                }
+                
+                google.accounts.id.renderButton(authContainer, buttonConfig);
                 
                 authContainer.style.display = 'block';
+
+                // Add Chrome-specific event listeners
+                if (this.browserInfo.isChrome) {
+                    // Monitor for button click to provide better UX feedback
+                    authContainer.addEventListener('click', () => {
+                        if (window.log) {
+                            window.log.debug('Google sign-in button clicked in Chrome', 'Auth');
+                        }
+                        // Show loading state or helpful message
+                        this.showChromeSignInFeedback();
+                    });
+                }
+                
             } catch (error) {
                 if (window.log) {
                     window.log.error('Error rendering Google button', 'Auth', error);
                 }
+                // Fallback: Create a manual sign-in button
+                this.createFallbackSignInButton(authContainer);
             }
         }
+    }
+
+    /**
+     * Show Chrome-specific sign-in feedback
+     */
+    showChromeSignInFeedback() {
+        if (this.browserInfo.isChrome) {
+            // Create a temporary status message
+            const authContainer = document.getElementById('auth-container');
+            if (authContainer) {
+                const statusDiv = document.createElement('div');
+                statusDiv.style.cssText = `
+                    position: absolute;
+                    background: #333;
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    top: 100%;
+                    left: 0;
+                    margin-top: 5px;
+                    white-space: nowrap;
+                    z-index: 1000;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                `;
+                statusDiv.textContent = 'Opening Google sign-in...';
+                authContainer.appendChild(statusDiv);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 3000);
+            }
+        }
+    }
+
+    /**
+     * Create fallback sign-in button if Google button fails
+     */
+    createFallbackSignInButton(container) {
+        container.innerHTML = `
+            <button class="google-signin-fallback" onclick="window.authManager.handleFallbackSignIn()">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+            </button>
+        `;
+        
+        container.style.display = 'block';
+    }
+
+    /**
+     * Handle fallback sign-in when Google button fails
+     */
+    handleFallbackSignIn() {
+        if (window.log) {
+            window.log.debug('Fallback sign-in initiated', 'Auth');
+        }
+        
+        // Open Google OAuth in a new window
+        const clientId = this.config.get('google.clientId');
+        const redirectUri = encodeURIComponent(window.location.origin);
+        const scope = encodeURIComponent('openid email profile');
+        
+        const googleAuthUrl = `https://accounts.google.com/oauth/v2/auth?` +
+            `client_id=${clientId}&` +
+            `redirect_uri=${redirectUri}&` +
+            `scope=${scope}&` +
+            `response_type=code&` +
+            `access_type=offline`;
+            
+        // Open in popup
+        const popup = window.open(
+            googleAuthUrl,
+            'google-signin',
+            'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+        
+        if (!popup) {
+            alert('Popup was blocked. Please allow popups for this site and try again.');
+            return;
+        }
+        
+        // Monitor popup
+        const checkClosed = setInterval(() => {
+            if (popup.closed) {
+                clearInterval(checkClosed);
+                if (window.log) {
+                    window.log.debug('Sign-in popup closed', 'Auth');
+                }
+            }
+        }, 1000);
     }
 
     // Sign out user
