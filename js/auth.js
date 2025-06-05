@@ -308,11 +308,37 @@ class AuthManager {
         if (this.user) {
             // User is signed in - show only avatar in circular button
             if (authButton) {
+                // Debug: Log the picture URL
+                if (window.log) {
+                    window.log.debug(`Profile picture URL: ${this.user.picture}`, 'Auth');
+                }
+                
                 authButton.innerHTML = `
                     <img src="${this.user.picture}" alt="${this.user.name}" class="user-avatar">
                 `;
                 authButton.className = 'auth-button signed-in';
                 authButton.onclick = () => this.toggleDropdown();
+                
+                // Add error handling after the element is created
+                const avatarImg = authButton.querySelector('.user-avatar');
+                if (avatarImg) {
+                    avatarImg.onload = () => {
+                        if (window.log) {
+                            window.log.debug('Profile image loaded successfully', 'Auth');
+                        }
+                    };
+                    avatarImg.onerror = () => {
+                        if (window.log) {
+                            window.log.warn('Profile image failed to load, showing fallback', 'Auth');
+                        }
+                        authButton.innerHTML = `
+                            <div class="user-avatar-fallback">
+                                <span class="user-initials">${this.getUserInitials(this.user.name)}</span>
+                            </div>
+                        `;
+                        authButton.onclick = () => this.toggleDropdown();
+                    };
+                }
             }
 
             if (userInfo) {
@@ -336,6 +362,21 @@ class AuthManager {
                         </button>
                     </div>
                 `;
+                
+                // Add error handling for dropdown avatar
+                const dropdownAvatar = userInfo.querySelector('.user-avatar-large');
+                if (dropdownAvatar) {
+                    dropdownAvatar.onerror = () => {
+                        dropdownAvatar.style.display = 'none';
+                        const userDetails = userInfo.querySelector('.user-details');
+                        if (userDetails) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'user-avatar-large-fallback';
+                            fallback.innerHTML = `<span class="user-initials-large">${this.getUserInitials(this.user.name)}</span>`;
+                            userDetails.insertBefore(fallback, userDetails.querySelector('.user-text'));
+                        }
+                    };
+                }
             }
 
             // Clear any Google button in auth container when signed in
@@ -418,6 +459,16 @@ class AuthManager {
 
     getUserName() {
         return this.user ? this.user.name : null;
+    }
+
+    // Get user initials for avatar fallback
+    getUserInitials(name) {
+        if (!name) return '?';
+        const names = name.split(' ');
+        if (names.length === 1) {
+            return names[0].charAt(0).toUpperCase();
+        }
+        return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
     }
 }
 
