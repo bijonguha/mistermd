@@ -82,7 +82,9 @@ class AppConfig {
                 },
                 themes: {
                     default: 'light',
-                    available: ['light', 'dark']
+                    available: ['light', 'dark'],
+                    storageKey: 'mistermd_theme',
+                    systemPreference: true // Use system preference as fallback
                 },
                 animation: {
                     duration: 300,
@@ -176,7 +178,7 @@ class AppConfig {
                 advancedExport: true,
                 progressUI: true,
                 autoSave: false,
-                darkMode: false,
+                darkMode: true,
                 collaborativeEditing: false
             },
 
