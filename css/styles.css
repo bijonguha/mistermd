@@ -582,9 +582,6 @@ h1 {
     margin: 0 auto 24px;
     font-size: 1.1rem;
     font-weight: 400;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .toolbar {
@@ -851,10 +848,46 @@ textarea:focus {
     
     h1 {
         font-size: 2rem;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    .description {
+        font-size: 1rem;
+        text-align: center;
+        line-height: 1.5;
+        padding: 0 10px;
+        word-wrap: break-word;
+        hyphens: auto;
     }
     
     .preview {
         padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 12px;
+    }
+    
+    .container {
+        padding: 16px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+        line-height: 1.1;
+    }
+    
+    .description {
+        font-size: 0.95rem;
+        padding: 0 8px;
+        max-width: 100%;
+    }
+    
+    .header {
+        padding: 20px 0;
     }
 }
 
