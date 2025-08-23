@@ -145,9 +145,9 @@
     text-align: center;
     margin: 1.5em 0;
     padding: 16px;
-    background: linear-gradient(135deg, #fefefe, #f8fafc);
+    background: var(--code-bg);
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     overflow-x: auto;
 }
@@ -156,30 +156,55 @@
     display: inline;
     padding: 2px 4px;
     margin: 0 2px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--code-bg);
     border-radius: 4px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     line-height: 1;
     vertical-align: middle;
 }
 
 .preview .katex {
     font-size: 1.1em;
+    color: var(--text-color);
 }
 
 .preview .katex-display {
     margin: 0.5em 0;
+    color: var(--text-color);
 }
 
 .preview .math-block {
     text-align: center;
     margin: 1.5em 0;
     padding: 16px;
-    background: linear-gradient(135deg, #fefefe, #f8fafc);
+    background: var(--code-bg);
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     overflow-x: auto;
+}
+
+/* Dark theme specific math styles */
+[data-theme="dark"] .preview .katex {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .preview .katex-display {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .preview .katex .base {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .preview .math-display {
+    background: var(--code-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .preview .math-inline {
+    background: var(--code-bg);
+    border-color: var(--border-color);
 }
 
 /* Fix for heading background issue */

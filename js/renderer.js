@@ -75,29 +75,25 @@ function preprocessMath(text) {
 
 // Math postprocessing function
 function postprocessMath(html, displayMathBlocks, inlineMathBlocks) {
-    if (window.log && window.appConfig?.get('development.debug')) {
-        window.log.debug('Postprocessing math', 'Renderer', {
-            html: html.substring(0, 200) + '...',
-            displayMathBlocks,
-            inlineMathBlocks
-        });
-    }
-    
-    // Restore display math blocks
-    html = html.replace(/__DISPLAY_MATH_(\d+)__/g, (match, index) => {
+    // Restore display math blocks (handle cases where markdown wrapped them in tags)
+    html = html.replace(/(?:<[^>]*>)*__DISPLAY_MATH_(\d+)__(?:<\/[^>]*>)*/g, (match, index) => {
         return `<div class="math-display">$$${displayMathBlocks[index]}$$</div>`;
     });
     
-    // Restore inline math blocks
-    html = html.replace(/__INLINE_MATH_(\d+)__/g, (match, index) => {
+    // Also handle the case where they got wrapped in <strong> tags specifically
+    html = html.replace(/<strong>DISPLAY_MATH_(\d+)<\/strong>/g, (match, index) => {
+        return `<div class="math-display">$$${displayMathBlocks[index]}$$</div>`;
+    });
+    
+    // Restore inline math blocks (handle cases where markdown wrapped them in tags)
+    html = html.replace(/(?:<[^>]*>)*__INLINE_MATH_(\d+)__(?:<\/[^>]*>)*/g, (match, index) => {
         return `<span class="math-inline">$${inlineMathBlocks[index]}$</span>`;
     });
     
-    if (window.log && window.appConfig?.get('development.debug')) {
-        window.log.debug('Math postprocessing complete', 'Renderer', {
-            finalHtml: html.substring(0, 200) + '...'
-        });
-    }
+    // Also handle the case where they got wrapped in <strong> tags specifically
+    html = html.replace(/<strong>INLINE_MATH_(\d+)<\/strong>/g, (match, index) => {
+        return `<span class="math-inline">$${inlineMathBlocks[index]}$</span>`;
+    });
     
     return html;
 }
@@ -154,20 +150,23 @@ function renderMarkdown() {
         window.log.debug(`authManager available: ${typeof window.authManager !== 'undefined'}`, 'Renderer');
     }
     
+    // Check if running locally (bypass auth for local development)
+    const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
     // Check authentication status
-    let isAuthenticated = false;
-    if (typeof window.authManager !== 'undefined' && window.authManager.isAuthenticated) {
+    let isAuthenticated = isLocal; // Bypass auth for local development
+    if (!isLocal && typeof window.authManager !== 'undefined' && window.authManager.isAuthenticated) {
         isAuthenticated = window.authManager.isAuthenticated();
         if (window.log) {
             window.log.debug(`User authenticated: ${isAuthenticated}`, 'Renderer');
         }
-    } else {
+    } else if (!isLocal) {
         if (window.log) {
             window.log.warn('AuthManager not properly initialized', 'Renderer');
         }
     }
     
-    // If not authenticated, force sign-in
+    // If not authenticated and not local, force sign-in
     if (!isAuthenticated) {
         if (window.log) {
             window.log.info('User not authenticated - triggering sign-in for render', 'Renderer');
