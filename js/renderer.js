@@ -54,17 +54,17 @@ marked.use({ renderer });
 
 // Math preprocessing function
 function preprocessMath(text) {
-    // Protect display math blocks ($$...$$) first
+    // Protect display math blocks ($$...$$) first - use non-greedy matching
     const displayMathBlocks = [];
-    text = text.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
         const placeholder = `__DISPLAY_MATH_${displayMathBlocks.length}__`;
         displayMathBlocks.push(math.trim());
         return placeholder;
     });
     
-    // Protect inline math ($...$)
+    // Protect inline math ($...$) - avoid matching across line breaks for single $
     const inlineMathBlocks = [];
-    text = text.replace(/\$([^$\n]+)\$/g, (match, math) => {
+    text = text.replace(/\$([^$\r\n]+)\$/g, (match, math) => {
         const placeholder = `__INLINE_MATH_${inlineMathBlocks.length}__`;
         inlineMathBlocks.push(math.trim());
         return placeholder;
@@ -75,6 +75,14 @@ function preprocessMath(text) {
 
 // Math postprocessing function
 function postprocessMath(html, displayMathBlocks, inlineMathBlocks) {
+    if (window.log && window.appConfig?.get('development.debug')) {
+        window.log.debug('Postprocessing math', 'Renderer', {
+            html: html.substring(0, 200) + '...',
+            displayMathBlocks,
+            inlineMathBlocks
+        });
+    }
+    
     // Restore display math blocks
     html = html.replace(/__DISPLAY_MATH_(\d+)__/g, (match, index) => {
         return `<div class="math-display">$$${displayMathBlocks[index]}$$</div>`;
@@ -84,6 +92,12 @@ function postprocessMath(html, displayMathBlocks, inlineMathBlocks) {
     html = html.replace(/__INLINE_MATH_(\d+)__/g, (match, index) => {
         return `<span class="math-inline">$${inlineMathBlocks[index]}$</span>`;
     });
+    
+    if (window.log && window.appConfig?.get('development.debug')) {
+        window.log.debug('Math postprocessing complete', 'Renderer', {
+            finalHtml: html.substring(0, 200) + '...'
+        });
+    }
     
     return html;
 }
