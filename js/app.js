@@ -154,6 +154,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    document.getElementById('example-math').addEventListener('click', () => {
+        loadExample('math');
+        // Track example loading with Google Analytics
+        if (typeof trackExampleLoad === 'function') {
+            trackExampleLoad('math');
+        }
+    });
+
     document.getElementById('example-code').addEventListener('click', () => {
         loadExample('code');
         // Track example loading with Google Analytics

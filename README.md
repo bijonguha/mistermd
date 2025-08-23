@@ -25,6 +25,7 @@ MisterMD transforms your Markdown writing experience into something extraordinar
 ### 📝 **Core Functionality**
 - 🔥 **Real-time Markdown Rendering** - See your content come to life instantly
 - 📊 **Mermaid Diagram Support** - Create stunning flowcharts, sequence diagrams, Gantt charts, and more
+- 🧮 **Mathematical Formula Rendering** - Beautiful LaTeX math expressions with KaTeX
 - 🎨 **Syntax Highlighting** - Beautiful code blocks with Highlight.js
 - 📁 **File Upload Support** - Drag & drop `.md`, `.markdown`, `.txt` files
 - 💾 **Smart Export Options** - High-quality PDF and PNG exports
@@ -93,6 +94,7 @@ Explore MisterMD's capabilities with built-in examples:
 | 📊 **Flowchart** | Decision trees and process flows | Project planning, workflows |
 | 🔄 **Sequence Diagram** | Interaction patterns | API documentation, system design |
 | 📅 **Gantt Chart** | Project timelines | Project management, scheduling |
+| 🧮 **Math Formulas** | LaTeX mathematical expressions | Scientific papers, equations |
 | 💻 **Code Examples** | Syntax highlighting showcase | Technical documentation |
 | 📚 **Complete Document** | Full-featured example | Documentation templates |
 
@@ -104,6 +106,7 @@ Explore MisterMD's capabilities with built-in examples:
 |------------|---------|---------------|
 | 🔧 [Marked.js](https://marked.js.org/) | Markdown parsing | Fast, reliable, and lightweight |
 | 📊 [Mermaid](https://mermaid-js.github.io/) | Diagram rendering | Industry-standard diagramming |
+| 🧮 [KaTeX](https://katex.org/) | Math rendering | Fast, beautiful LaTeX math expressions |
 | 🎨 [Highlight.js](https://highlightjs.org/) | Syntax highlighting | Beautiful code presentation |
 | 📸 [html2canvas](https://html2canvas.hertzen.com/) | PNG export | High-quality image generation |
 | 📄 [jsPDF](https://github.com/parallax/jsPDF) | PDF export | Professional document output |

@@ -90,6 +90,73 @@ console.log(result);
 
 This function takes an array of objects, doubles the value property, and adds a timestamp.`,
 
+    math: 
+`# Mathematical Formulas Example
+
+## Introduction
+This example demonstrates mathematical formula rendering using LaTeX syntax. The application supports both inline and display math expressions.
+
+## Display Math
+Here are some display math examples:
+
+$$
+\\text{subarray\\_sum} = \\text{prefixSum}[right] - \\text{prefixSum}[left - 1]
+$$
+
+$$
+E = mc^2
+$$
+
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+$$
+
+$$
+\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}
+$$
+
+## Inline Math
+You can also include math inline like $f(x) = x^2 + 2x + 1$ or $\\alpha + \\beta = \\gamma$.
+
+The quadratic formula is $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.
+
+## Fractions and Complex Expressions
+$$
+\\frac{\\partial f}{\\partial x} = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}
+$$
+
+$$
+\\begin{bmatrix}
+a & b \\\\
+c & d
+\\end{bmatrix}
+\\begin{bmatrix}
+x \\\\
+y
+\\end{bmatrix}
+=
+\\begin{bmatrix}
+ax + by \\\\
+cx + dy
+\\end{bmatrix}
+$$
+
+## Greek Letters and Symbols
+Common mathematical symbols: $\\alpha, \\beta, \\gamma, \\delta, \\epsilon, \\pi, \\sigma, \\omega$
+
+Set operations: $A \\cup B$, $A \\cap B$, $A \\subset B$, $x \\in A$
+
+## Calculus Examples
+$$
+\\frac{d}{dx}[x^n] = nx^{n-1}
+$$
+
+$$
+\\int x^n dx = \\frac{x^{n+1}}{n+1} + C \\quad (n \\neq -1)
+$$
+
+This demonstrates the power of mathematical rendering in markdown documents!`,
+
     complete: 
 `# Project Documentation
 

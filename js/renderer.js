@@ -44,10 +44,49 @@ renderer.code = function(code, language) {
     if (language === 'mermaid') {
         return `<div class="mermaid">${code}</div>`;
     }
+    if (language === 'math' || language === 'latex') {
+        return `<div class="math-block">$$${code}$$</div>`;
+    }
     return originalCodeRenderer(code, language);
 };
 
 marked.use({ renderer });
+
+// Math preprocessing function
+function preprocessMath(text) {
+    // Protect display math blocks ($$...$$) first
+    const displayMathBlocks = [];
+    text = text.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+        const placeholder = `__DISPLAY_MATH_${displayMathBlocks.length}__`;
+        displayMathBlocks.push(math.trim());
+        return placeholder;
+    });
+    
+    // Protect inline math ($...$)
+    const inlineMathBlocks = [];
+    text = text.replace(/\$([^$\n]+)\$/g, (match, math) => {
+        const placeholder = `__INLINE_MATH_${inlineMathBlocks.length}__`;
+        inlineMathBlocks.push(math.trim());
+        return placeholder;
+    });
+    
+    return { text, displayMathBlocks, inlineMathBlocks };
+}
+
+// Math postprocessing function
+function postprocessMath(html, displayMathBlocks, inlineMathBlocks) {
+    // Restore display math blocks
+    html = html.replace(/__DISPLAY_MATH_(\d+)__/g, (match, index) => {
+        return `<div class="math-display">$$${displayMathBlocks[index]}$$</div>`;
+    });
+    
+    // Restore inline math blocks
+    html = html.replace(/__INLINE_MATH_(\d+)__/g, (match, index) => {
+        return `<span class="math-inline">$${inlineMathBlocks[index]}$</span>`;
+    });
+    
+    return html;
+}
 
 // Debug function to test authentication status
 window.testAuth = function() {
@@ -287,9 +326,40 @@ function actualRenderMarkdown(markdownText) {
                 throw new Error('Markdown parser (marked.js) is not loaded. Please refresh the page.');
             }
             
+            // Preprocess math expressions
+            const { text: preprocessedText, displayMathBlocks, inlineMathBlocks } = preprocessMath(trimmedText);
+            
             // Convert markdown to HTML with validated input
-            const html = marked.parse(trimmedText);
+            let html = marked.parse(preprocessedText);
+            
+            // Restore math expressions
+            html = postprocessMath(html, displayMathBlocks, inlineMathBlocks);
             preview.innerHTML = html;
+            
+            // Render math expressions with KaTeX
+            const mathElements = document.querySelectorAll('.math-display, .math-inline');
+            if (mathElements.length > 0 && typeof katex !== 'undefined') {
+                loadingText.textContent = 'Rendering math expressions...';
+                mathElements.forEach(element => {
+                    try {
+                        const mathText = element.textContent;
+                        const isDisplay = element.classList.contains('math-display');
+                        const cleanMath = mathText.replace(/^\$+|\$+$/g, ''); // Remove $ symbols
+                        
+                        katex.render(cleanMath, element, {
+                            displayMode: isDisplay,
+                            throwOnError: false,
+                            errorColor: '#cc0000',
+                            strict: 'warn'
+                        });
+                    } catch (error) {
+                        if (window.log) {
+                            window.log.warn('KaTeX rendering error', 'Renderer', error);
+                        }
+                        element.innerHTML = `<span style="color: #cc0000; font-style: italic;">Math Error: ${error.message}</span>`;
+                    }
+                });
+            }
             
             // Render mermaid diagrams
             const mermaidElements = document.querySelectorAll('.mermaid');
