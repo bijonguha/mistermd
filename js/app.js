@@ -87,9 +87,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const config = window.appConfig;
         const mermaidConfig = config.get('markdown.mermaid');
         
+        // Determine theme based on current theme if theme manager is available
+        let mermaidTheme = mermaidConfig.theme;
+        if (typeof window.themeManager !== 'undefined') {
+            mermaidTheme = window.themeManager.isDarkTheme() ? 'dark' : 'default';
+        }
+        
         mermaid.initialize({
             startOnLoad: mermaidConfig.startOnLoad,
-            theme: mermaidConfig.theme,
+            theme: mermaidTheme,
             securityLevel: mermaidConfig.securityLevel,
             flowchart: mermaidConfig.flowchart,
             sequence: mermaidConfig.sequence,
@@ -97,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (window.log) {
-            window.log.info('Mermaid initialized with configuration', 'App');
+            window.log.info(`Mermaid initialized with theme: ${mermaidTheme}`, 'App');
         }
     }
     

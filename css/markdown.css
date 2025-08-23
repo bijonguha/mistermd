@@ -47,7 +47,7 @@
 }
 
 .preview pre {
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--code-bg);
     padding: 24px;
     border-radius: 12px;
     overflow-x: auto;
@@ -61,16 +61,18 @@
 
 .preview code {
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    background: var(--code-bg);
+    color: var(--code-text);
     padding: 0.3em 0.6em;
     border-radius: 6px;
     font-size: 0.9em;
     font-weight: 500;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-color);
 }
 
 .preview pre code {
     background: none;
+    color: var(--code-text);
     padding: 0;
     border: none;
     border-radius: 0;
@@ -80,10 +82,10 @@
     border-left: 4px solid var(--primary-color);
     padding: 16px 24px;
     margin: 1.5em 0;
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    background: var(--blockquote-bg);
     border-radius: 0 8px 8px 0;
     font-style: italic;
-    color: #1e40af;
+    color: var(--blockquote-text);
 }
 
 .preview table {
@@ -103,7 +105,7 @@
 }
 
 .preview table th {
-    background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+    background: var(--table-header-bg);
     color: white;
     font-weight: 600;
     font-size: 0.95em;
@@ -111,11 +113,11 @@
 }
 
 .preview table tr:nth-child(even) {
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--table-row-even);
 }
 
 .preview table tr:hover {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    background: var(--table-row-hover);
 }
 
 .preview ul, .preview ol {
@@ -132,7 +134,7 @@
     text-align: center;
     margin: 2em 0;
     padding: 20px;
-    background: white;
+    background: var(--mermaid-bg);
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
@@ -187,4 +189,66 @@
     -webkit-text-fill-color: inherit;
     background-clip: unset;
     user-select: auto !important;
+}
+
+/* Dark theme specific overrides for better contrast */
+[data-theme="dark"] .preview {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .preview h1,
+[data-theme="dark"] .preview h2,
+[data-theme="dark"] .preview h3,
+[data-theme="dark"] .preview h4,
+[data-theme="dark"] .preview h5,
+[data-theme="dark"] .preview h6 {
+    color: var(--text-color);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .preview p,
+[data-theme="dark"] .preview li,
+[data-theme="dark"] .preview td,
+[data-theme="dark"] .preview th {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .preview strong {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .preview em {
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] .preview a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .preview a:hover {
+    color: var(--secondary-color);
+}
+
+/* Ensure table headers have white text on colored background */
+[data-theme="dark"] .preview table th {
+    color: white !important;
+}
+
+/* Fix any remaining white backgrounds in dark mode */
+[data-theme="dark"] .preview .mermaid {
+    background: var(--mermaid-bg);
+    color: var(--text-color);
+}
+
+/* Fix code blocks to use proper dark theme colors */
+[data-theme="dark"] .preview pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .preview code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-color: var(--border-color);
 }
