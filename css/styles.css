@@ -99,31 +99,29 @@ body {
 .header {
     text-align: center;
     margin-bottom: 20px;
-    padding: 40px 0;
+    padding: 20px 0;
 }
 
-/* Header layout for auth button */
+/* Header layout — title centred, controls pinned right at title level */
 .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position: relative;
     max-width: 1200px;
     margin: 0 auto;
-    position: relative;
 }
 
 .header-text {
-    flex: 1;
+    /* full-width block so text-align:center works on the full line */
 }
 
 .header-auth {
     position: absolute;
-    top: 0;
     right: 0;
+    /* 1.5em × 2.5rem h1 font-size = 3.75rem — matches hero-title padding-top */
+    top: 3.75rem;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
 }
 
 /* Circular auth button styles - fixed */
@@ -446,14 +444,15 @@ body {
 
 /* Responsive design for circular auth button */
 @media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        gap: 24px;
-    }
-    
     .header-auth {
-        position: static;
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        flex-direction: row;
         align-items: center;
+        gap: 10px;
+        z-index: 1000;
     }
     
     .auth-button.signed-in {
@@ -578,9 +577,9 @@ h1 {
 
 /* ── "shareable" annotation on the hero title ── */
 
-/* Extra top breathing room so annotation never clips */
+/* Top room for the "shareable" annotation above the cap-height */
 .hero-title {
-    padding-top: 2.2em;
+    padding-top: 1.5em;
     line-height: 1.2;
 }
 
@@ -597,30 +596,46 @@ h1 {
     vertical-align: baseline;
 }
 
-/* "shareable" label — centered over the gap, scales with font size */
+/* Rainbow gradient flow animation */
+@keyframes rainbow-flow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* "shareable" label — rainbow gradient text */
 .shareable-label {
     position: absolute;
-    bottom: 1.55em;          /* em → scales with h1 font-size */
+    bottom: 1.2em;
     left: 50%;
-    transform: translateX(-50%) rotate(-5deg);
+    transform: translateX(-40%) rotate(-5deg);
     font-family: 'Caveat', cursive;
-    font-size: 0.44em;       /* relative to h1, stays proportional */
-    font-weight: 600;
-    color: #4A9EF5;
+    font-size: 0.55em;
+    font-weight: 700;
     white-space: nowrap;
     letter-spacing: 0.03em;
     pointer-events: none;
     user-select: none;
+    /* Rainbow gradient text */
+    background: linear-gradient(
+        90deg,
+        #ff0000, #ff6600, #ffcc00, #00cc44, #00aaff, #7c3aed, #ff0099, #ff0000
+    );
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow-flow 3s linear infinite;
 }
 
-/* Red caret — sits just below the label, centered on same axis */
+/* Red caret — subscript: clearly below the baseline */
 .shareable-caret {
     position: absolute;
-    bottom: 0.9em;
+    bottom: -0.75em;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-30%);
     font-family: 'Georgia', serif;
-    font-size: 0.38em;
+    font-size: 0.55em;
     font-weight: 900;
     color: #EF4444;
     line-height: 1;
@@ -628,9 +643,14 @@ h1 {
     user-select: none;
 }
 
-/* Dark mode */
+/* Dark mode — no override needed, gradient works on both */
 [data-theme="dark"] .shareable-label {
-    color: #60B0FF;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .shareable-label { animation: none; }
 }
 
 .description {
@@ -955,10 +975,6 @@ textarea:focus {
 
 /* Theme Toggle Styles */
 .theme-toggle {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1001;
     background: var(--card-bg);
     border: 2px solid var(--border-color);
     border-radius: 50px;
@@ -1034,9 +1050,6 @@ textarea:focus {
 /* Mobile adjustments for theme toggle */
 @media (max-width: 768px) {
     .theme-toggle {
-        position: fixed;
-        top: 15px;
-        right: 15px;
         width: 50px;
         height: 35px;
         padding: 6px;
