@@ -185,34 +185,32 @@ function renderMarkdown() {
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" style="margin-bottom: 16px;">
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <h3 style="color: #334155; margin: 16px 0 8px 0; font-size: 18px;">Sign in to render your markdown</h3>
-                <p style="color: #64748b; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
+                <h3 style="color: #334155; margin: 16px 0 8px 0; font-size: 18px; text-align: center;">Sign in to render your markdown</h3>
+                <p style="color: #64748b; margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; text-align: center;">
                     To use the markdown renderer, please sign in with your Google account.<br>
                     This helps us provide better service and track your usage.
                 </p>
-                <div style="
-                    display: inline-flex; 
-                    align-items: center; 
-                    gap: 8px; 
-                    padding: 8px 16px; 
-                    background: #3b82f6; 
-                    color: white; 
-                    border-radius: 8px; 
-                    font-size: 14px;
-                    animation: pulse 2s infinite;
-                ">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Google sign-in popup opening...
+                <div style="display: flex; justify-content: center;">
+                    <button onclick="window.authManager && window.authManager.signIn()" style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 20px;
+                        background: #3b82f6;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: background 0.2s ease;
+                    " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Try again
+                    </button>
                 </div>
-            </div>
-            <style>
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.7; }
-                }
-            </style>
         `;
         
         // Also show loading indicator
