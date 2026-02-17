@@ -213,33 +213,23 @@ function renderMarkdown() {
                 </div>
         `;
         
-        // Also show loading indicator
-        loadingIndicator.style.display = 'block';
-        loadingText.textContent = 'Waiting for authentication...';
-        
         // Store the markdown text to render after sign-in
         window.pendingRender = markdownText;
-        
-        // Add one-time callback for after sign-in
-        window.authManager.onSignIn(function(user) {
-            if (window.log) {
-                window.log.info('User signed in, proceeding with render', 'Renderer');
-            }
-            loadingIndicator.style.display = 'none';
-            
-            // Proceed with rendering the stored markdown with validation
-            if (window.pendingRender && typeof window.pendingRender === 'string' && window.pendingRender.trim()) {
-                setTimeout(() => {
-                    actualRenderMarkdown(window.pendingRender);
-                    window.pendingRender = null;
-                }, 500);
-            } else {
-                if (window.log) {
-                    window.log.warn('No valid pending render content after sign-in', 'Renderer');
+
+        // Register callback only once — avoid accumulating listeners across attempts
+        if (!window._pendingRenderCallbackRegistered) {
+            window._pendingRenderCallbackRegistered = true;
+            window.authManager.onSignIn(function() {
+                window._pendingRenderCallbackRegistered = false;
+                loadingIndicator.style.display = 'none';
+                if (window.pendingRender && typeof window.pendingRender === 'string' && window.pendingRender.trim()) {
+                    setTimeout(() => {
+                        actualRenderMarkdown(window.pendingRender);
+                        window.pendingRender = null;
+                    }, 300);
                 }
-                window.pendingRender = null;
-            }
-        });
+            });
+        }
         
         // Handle cancellation - set a timeout to check if sign-in was cancelled
         setTimeout(() => {

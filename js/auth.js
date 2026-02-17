@@ -74,29 +74,22 @@ class AuthManager {
             }
 
             try {
-                const initConfig = {
+                // Token client always opens a real OAuth popup — no rate limiting
+                this.tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: clientId,
-                    callback: (response) => this.handleCredentialResponse(response),
-                    auto_select: autoSelect,
-                    cancel_on_tap_outside: cancelOnTapOutside,
-                    itp_support: true
-                };
-
-                if (window.log) {
-                    window.log.debug('Auth config:', 'Auth', initConfig);
-                }
-
-                google.accounts.id.initialize(initConfig);
+                    scope: 'openid email profile',
+                    callback: (resp) => this.handleTokenResponse(resp)
+                });
 
                 this.isInitialized = true;
                 if (window.log) {
                     window.log.info('Google Identity Services initialized', 'Auth');
                 }
-                
-                // Check for existing session and update UI
+
+                // Restore existing session
                 this.loadUserFromStorage();
                 this.updateUI();
-                
+
                 resolve();
             } catch (error) {
                 if (window.log) {
@@ -160,75 +153,59 @@ class AuthManager {
         }
     }
 
-    // Show Google sign-in prompt
+    // Open Google OAuth popup — always works, no rate limiting
     signIn() {
         if (window.log) {
             window.log.debug('signIn() called', 'Auth');
         }
 
-        if (!this.isInitialized) {
-            if (window.log) {
-                window.log.error('Authentication not initialized', 'Auth');
-            }
+        if (!this.isInitialized || !this.tokenClient) {
             alert('Authentication not ready. Please refresh the page.');
             return;
         }
 
-        if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
+        // requestAccessToken always opens a real Google OAuth popup
+        this.tokenClient.requestAccessToken({ prompt: 'select_account' });
+    }
+
+    // Handle OAuth token response — fetch user info from Google
+    async handleTokenResponse(tokenResponse) {
+        if (tokenResponse.error) {
             if (window.log) {
-                window.log.error('Google Identity Services not loaded', 'Auth');
+                window.log.error('Token error', 'Auth', tokenResponse.error);
             }
-            alert('Google services not loaded. Please refresh the page.');
             return;
         }
 
-        // Try the One Tap / FedCM prompt first (works in all browsers)
         try {
-            google.accounts.id.prompt((notification) => {
-                if (window.log) {
-                    window.log.debug('Prompt result:', 'Auth', {
-                        isNotDisplayed: notification.isNotDisplayed(),
-                        isSkippedMoment: notification.isSkippedMoment(),
-                        isDismissedMoment: notification.isDismissedMoment()
-                    });
-                }
-
-                // Prompt was blocked (e.g. cookies disabled) — fall back to rendered button
-                if (notification.isNotDisplayed()) {
-                    if (window.log) {
-                        window.log.debug('Prompt not displayed - showing sign-in button', 'Auth');
-                    }
-                    this.renderSignInButton();
-                }
+            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
             });
+            const info = await res.json();
+
+            const user = {
+                id: info.sub,
+                email: info.email,
+                name: info.name,
+                picture: info.picture,
+                token: tokenResponse.access_token
+            };
+
+            this.user = user;
+            this.saveUserToStorage(user);
+            this.updateUI();
+            this.triggerCallbacks('onSignIn', user);
+
+            if (window.log) {
+                window.log.info(`User signed in: ${user.name}`, 'Auth');
+            }
+
+            if (typeof gtag === 'function') {
+                gtag('event', 'login', { method: 'Google', user_id: user.id });
+            }
         } catch (error) {
             if (window.log) {
-                window.log.error('Error with Google prompt', 'Auth', error);
-            }
-            this.renderSignInButton();
-        }
-    }
-
-    // Render Google sign-in button (fallback when prompt is blocked)
-    renderSignInButton() {
-        const authContainer = document.getElementById('auth-container');
-        if (authContainer && !this.user) {
-            try {
-                authContainer.innerHTML = '';
-                google.accounts.id.renderButton(authContainer, {
-                    theme: 'outline',
-                    size: 'medium',
-                    text: 'signin_with',
-                    shape: 'rectangular',
-                    logo_alignment: 'left',
-                    width: 200
-                });
-                authContainer.style.display = 'block';
-            } catch (error) {
-                if (window.log) {
-                    window.log.error('Error rendering Google button', 'Auth', error);
-                }
-                this.createFallbackSignInButton(authContainer);
+                window.log.error('Failed to fetch user info', 'Auth', error);
             }
         }
     }
