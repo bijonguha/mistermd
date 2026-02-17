@@ -18,6 +18,15 @@ class AppConfig {
             google: {
                 // OAuth Client ID
                 clientId: '416699519304-7n5488jfl10dv2sjjdonmc7sbf09vobn.apps.googleusercontent.com',
+
+                // API Key for Drive API (needed to fetch public shared files without OAuth).
+                // Steps to create one:
+                //   1. Open https://console.cloud.google.com → APIs & Services → Credentials
+                //   2. Click "Create Credentials" → API key
+                //   3. Restrict the key: HTTP referrers → https://mistermd.vercel.app/*
+                //   4. Enable: Drive API + Google Picker API on your project
+                //   5. Paste the key below.
+                apiKey: 'AIzaSyDmHT7Dgu0yUeSaSBV9sezy4waAmJxp4_E',
                 
                 // Google Analytics
                 analytics: {

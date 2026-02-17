@@ -252,16 +252,24 @@ class ThemeManager {
     updateMermaidTheme() {
         if (typeof mermaid !== 'undefined') {
             const mermaidTheme = this.currentTheme === 'dark' ? 'dark' : 'default';
-            
+
             try {
                 mermaid.initialize({
                     theme: mermaidTheme,
                     securityLevel: 'loose',
                     startOnLoad: false
                 });
-                
+
                 if (window.log) {
                     window.log.debug(`Updated mermaid theme to: ${mermaidTheme}`, 'Theme');
+                }
+
+                // Re-render existing diagrams when theme is toggled (not on initial load)
+                if (this.isInitialized && typeof actualRenderMarkdown === 'function') {
+                    const markdownText = document.getElementById('markdown-input')?.value?.trim();
+                    if (markdownText) {
+                        actualRenderMarkdown(markdownText);
+                    }
                 }
             } catch (error) {
                 if (window.log) {
