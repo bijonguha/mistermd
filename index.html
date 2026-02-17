@@ -97,6 +97,11 @@
     }
     </script>
     
+    <!-- Caveat font for "shareable" annotation -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -113,7 +118,11 @@
     <div class="header">
         <div class="header-content">
             <div class="header-text">
-                <h1>Render, Export &amp; Share Markdown Docs</h1>
+                <h1 class="hero-title">
+                    <span class="title-annotated">
+                        <span class="shareable-label">shareable</span>
+                        <span class="shareable-caret">^</span>The</span> Markdown Viewer for AI-Powered Devs 🚀
+                </h1>
                 <p class="description">
                     Render markdown &amp; Mermaid diagrams, export to PDF/PNG, and share live documents via Google Drive — free, no install
                 </p>

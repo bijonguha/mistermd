@@ -576,6 +576,50 @@ h1 {
     user-select: auto !important;
 }
 
+/* ── "shareable" annotation on the hero title ── */
+.hero-title {
+    padding-top: 2rem; /* headroom for the floating label */
+    line-height: 1.15;
+}
+
+.title-annotated {
+    position: relative;
+    display: inline-block;
+}
+
+.shareable-label {
+    position: absolute;
+    top: -1.65rem;
+    left: 0.15rem;
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4A9EF5;
+    transform: rotate(-5deg);
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    user-select: none;
+}
+
+.shareable-caret {
+    position: absolute;
+    top: -0.55rem;
+    left: 0.6rem;
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #EF4444;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Dark mode: slightly brighter blue so it pops */
+[data-theme="dark"] .shareable-label {
+    color: #60B0FF;
+}
+
 .description {
     color: var(--text-muted);
     max-width: 600px;
