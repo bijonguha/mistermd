@@ -577,37 +577,50 @@ h1 {
 }
 
 /* ── "shareable" annotation on the hero title ── */
+
+/* Extra top breathing room so annotation never clips */
 .hero-title {
-    padding-top: 2rem; /* headroom for the floating label */
-    line-height: 1.15;
+    padding-top: 2.2em;
+    line-height: 1.2;
 }
 
-.title-annotated {
+/*
+ * Zero-width anchor placed between "The" and "Markdown".
+ * overflow: visible lets the absolutely-positioned children
+ * paint outside without affecting text flow.
+ */
+.shareable-anchor {
     position: relative;
     display: inline-block;
+    width: 0;
+    overflow: visible;
+    vertical-align: baseline;
 }
 
+/* "shareable" label — centered over the gap, scales with font size */
 .shareable-label {
     position: absolute;
-    top: -1.65rem;
-    left: 0.15rem;
+    bottom: 1.55em;          /* em → scales with h1 font-size */
+    left: 50%;
+    transform: translateX(-50%) rotate(-5deg);
     font-family: 'Caveat', cursive;
-    font-size: 1.1rem;
+    font-size: 0.44em;       /* relative to h1, stays proportional */
     font-weight: 600;
     color: #4A9EF5;
-    transform: rotate(-5deg);
     white-space: nowrap;
     letter-spacing: 0.03em;
     pointer-events: none;
     user-select: none;
 }
 
+/* Red caret — sits just below the label, centered on same axis */
 .shareable-caret {
     position: absolute;
-    top: -0.55rem;
-    left: 0.6rem;
+    bottom: 0.9em;
+    left: 50%;
+    transform: translateX(-50%);
     font-family: 'Georgia', serif;
-    font-size: 1rem;
+    font-size: 0.38em;
     font-weight: 900;
     color: #EF4444;
     line-height: 1;
@@ -615,7 +628,7 @@ h1 {
     user-select: none;
 }
 
-/* Dark mode: slightly brighter blue so it pops */
+/* Dark mode */
 [data-theme="dark"] .shareable-label {
     color: #60B0FF;
 }
