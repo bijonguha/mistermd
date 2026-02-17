@@ -1002,6 +1002,47 @@ textarea:focus {
 }
 
 /* ═══════════════════════════════════════════════
+   Feature Strip
+═══════════════════════════════════════════════ */
+
+.feature-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.feature-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.feature-pill svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.feature-pill-highlight {
+    background: linear-gradient(135deg, rgba(74,118,196,0.1), rgba(118,82,189,0.1));
+    border-color: rgba(74,118,196,0.35);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.feature-pill-highlight svg {
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════
    Share Button
 ═══════════════════════════════════════════════ */
 

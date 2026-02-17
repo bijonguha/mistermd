@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Meta Tags -->
-    <title>MisterMD - Free Online Markdown & Mermaid Diagram Viewer | Export PDF & PNG</title>
-    <meta name="description" content="Free online markdown viewer with Mermaid diagram support. Render, preview, and export markdown files to high-quality PDF and PNG. Perfect for developers and technical writers.">
-    <meta name="keywords" content="markdown viewer, mermaid diagrams, markdown to pdf, markdown to png, online markdown editor, markdown preview, technical documentation, developer tools">
+    <title>MisterMD - Render, Export & Share Markdown Docs | Free Online Viewer with Mermaid & Google Drive</title>
+    <meta name="description" content="Free online markdown viewer with Google Drive sharing. Render markdown & Mermaid diagrams, export to PDF/PNG, and share live documents via a shareable link. No install needed.">
+    <meta name="keywords" content="markdown viewer, share markdown online, shareable markdown link, markdown google drive, mermaid diagram viewer, markdown to pdf, markdown to png, online markdown editor, markdown preview, markdown sharing, share markdown document, technical documentation, developer tools">
     <meta name="author" content="MisterMD">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://mistermd.vercel.app/">
@@ -15,14 +15,14 @@
     <!-- Open Graph Tags -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mistermd.vercel.app/">
-    <meta property="og:title" content="MisterMD - Free Online Markdown & Mermaid Diagram Viewer">
-    <meta property="og:description" content="Free online markdown viewer with Mermaid diagram support. Export to PDF and PNG with professional quality.">
+    <meta property="og:title" content="MisterMD - Render, Export & Share Markdown Docs Free">
+    <meta property="og:description" content="Render markdown with Mermaid diagrams, export to PDF/PNG, and share live documents via Google Drive — all free, no installation required.">
     <meta property="og:site_name" content="MisterMD">
     
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="MisterMD - Free Online Markdown & Mermaid Diagram Viewer">
-    <meta name="twitter:description" content="Free online markdown viewer with Mermaid diagram support. Export to PDF and PNG.">
+    <meta name="twitter:title" content="MisterMD - Render, Export & Share Markdown Docs Free">
+    <meta name="twitter:description" content="Render markdown & Mermaid diagrams, export to PDF/PNG, share via Google Drive. Free, no install.">
     
     <!-- Additional SEO -->
     <meta name="theme-color" content="#4A76C4">
@@ -62,8 +62,8 @@
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "MisterMD",
-        "alternateName": "Enhanced Markdown and Mermaid Viewer",
-        "description": "Free online markdown viewer with Mermaid diagram support. Render, preview, and export markdown files to high-quality PDF and PNG.",
+        "alternateName": "Markdown Viewer with Google Drive Sharing",
+        "description": "Free online markdown viewer with Google Drive sharing. Render markdown and Mermaid diagrams, export to high-quality PDF and PNG, and share live documents via a shareable link — no installation required.",
         "url": "https://mistermd.vercel.app",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Web Browser",
@@ -83,11 +83,15 @@
         "featureList": [
             "Markdown rendering and preview",
             "Mermaid diagram support",
-            "PDF export functionality", 
+            "Google Drive sharing — save and share markdown docs via link",
+            "Shareable document links anyone can open",
+            "PDF export functionality",
             "PNG export functionality",
             "Real-time preview",
             "File upload support",
-            "Syntax highlighting"
+            "Syntax highlighting",
+            "Mathematical formula rendering with KaTeX",
+            "Dark and light theme"
         ],
         "browserRequirements": "HTML5, JavaScript enabled"
     }
@@ -109,9 +113,9 @@
     <div class="header">
         <div class="header-content">
             <div class="header-text">
-                <h1>The Markdown Viewer for AI-Powered Devs 🚀 </h1>
+                <h1>Render, Export &amp; Share Markdown Docs</h1>
                 <p class="description">
-                    Modern markdown viewer with high-quality rendering and export capability
+                    Render markdown &amp; Mermaid diagrams, export to PDF/PNG, and share live documents via Google Drive — free, no install
                 </p>
             </div>
             <div class="header-auth">
@@ -201,7 +205,27 @@
                 </svg>
             </button>
         </div>
-        
+
+        <!-- Feature strip — static text for SEO and user orientation -->
+        <div class="feature-strip" aria-label="Key features">
+            <span class="feature-pill">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Render Markdown &amp; Mermaid
+            </span>
+            <span class="feature-pill">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export PDF &amp; PNG
+            </span>
+            <span class="feature-pill feature-pill-highlight">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                Share via Google Drive
+            </span>
+            <span class="feature-pill">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Free &amp; No Install
+            </span>
+        </div>
+
         <div class="editor-container">
             <textarea id="markdown-input" placeholder="Enter your markdown content here, including Mermaid diagrams surrounded by ```mermaid and ``` tags..."></textarea>
             
