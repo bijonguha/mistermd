@@ -311,5 +311,55 @@
     </div>
 </div>
 
+<!-- Filename Prompt Modal -->
+<div id="share-filename-modal" class="share-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="share-filename-title">
+    <div class="share-modal">
+        <div class="share-modal-header">
+            <div class="share-modal-title-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary-color)">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <h3 id="share-filename-title" class="share-modal-title">Save to Google Drive</h3>
+            </div>
+        </div>
+        <div class="share-modal-body">
+            <label class="share-input-label" for="share-doc-name">Document name</label>
+            <div class="share-filename-row">
+                <input id="share-doc-name" class="share-url-input" type="text" placeholder="my-document" autocomplete="off" spellcheck="false">
+                <span class="share-filename-ext">.md</span>
+            </div>
+            <p class="share-modal-hint" style="margin-top:10px">You'll choose the Drive folder in the next step.</p>
+        </div>
+        <div class="share-modal-actions">
+            <button id="share-filename-cancel" class="share-btn-secondary">Cancel</button>
+            <button id="share-filename-confirm" class="share-copy-btn">Choose Folder &amp; Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Overwrite Dialog -->
+<div id="share-overwrite-modal" class="share-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="share-overwrite-title">
+    <div class="share-modal share-modal-sm">
+        <div class="share-modal-header">
+            <div class="share-modal-title-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--warning-color)">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <h3 id="share-overwrite-title" class="share-modal-title">Document changed</h3>
+            </div>
+        </div>
+        <div class="share-modal-body">
+            <p class="share-modal-hint">You've made changes to <strong id="share-overwrite-filename"></strong>. What would you like to do?</p>
+        </div>
+        <div class="share-modal-actions">
+            <button id="share-overwrite-new" class="share-btn-secondary">Save as new</button>
+            <button id="share-overwrite-update" class="share-copy-btn">Update existing</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

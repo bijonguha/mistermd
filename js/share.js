@@ -2,30 +2,27 @@
  * MisterMD Share Module
  * Handles sharing documents via Google Drive.
  *
- * Flow (author):
- *   1. Click "Share" → request Drive OAuth token (drive.file scope)
- *   2. Google Picker opens → user selects a folder
- *   3. File uploaded to chosen folder, permissions set to public reader
- *   4. Modal shows the share URL → user copies to clipboard
+ * Share flow (author):
+ *   A. No cache       → filename prompt → folder picker → upload → show link
+ *   B. Cache, no change → show cached link immediately (no upload)
+ *   C. Cache, changed  → overwrite dialog
+ *       ├─ "Update existing" → PATCH Drive file → show same link
+ *       └─ "Save as new"    → filename prompt (name_1, _2…) → picker → upload
  *
- * Flow (viewer):
- *   1. Opens URL with ?gdrive=<fileId>
- *   2. App fetches file from Drive API (requires google.apiKey in config)
- *   3. Markdown is loaded into editor and rendered
- *   4. "Shared document" banner is displayed
- *
- * Prerequisites:
- *   - Google OAuth Client ID (already configured in config.js)
- *   - Google API Key with Drive API enabled (add to config.js as google.apiKey)
- *     See: https://console.cloud.google.com → APIs & Services → Credentials
+ * View flow (viewer):
+ *   Opens ?gdrive=<fileId> → fetch public file → render
  */
 
 class ShareManager {
     constructor() {
-        this.accessToken = null;
+        this.accessToken      = null;
         this.driveTokenClient = null;
-        this.pendingMarkdown = null;
-        this.pickerApiLoaded = false;
+        this._pendingTokenResolve = null;
+        this._pendingTokenReject  = null;
+        this.pendingMarkdown  = null;
+        this.pendingFilename  = null;
+        this.pickerApiLoaded  = false;
+        this._CACHE_KEY       = 'mistermd_share_cache';
     }
 
     initialize() {
@@ -36,103 +33,98 @@ class ShareManager {
     // ─── Event Listeners ────────────────────────────────────────────────────────
 
     _setupEventListeners() {
-        const shareBtn = document.getElementById('share-btn');
-        if (shareBtn) {
-            shareBtn.addEventListener('click', () => this.onShareClick());
-        }
+        // Share button
+        document.getElementById('share-btn')
+            ?.addEventListener('click', () => this.onShareClick());
 
-        const closeBannerBtn = document.getElementById('shared-banner-close');
-        if (closeBannerBtn) {
-            closeBannerBtn.addEventListener('click', () => {
+        // Shared banner close
+        document.getElementById('shared-banner-close')
+            ?.addEventListener('click', () => {
                 document.getElementById('shared-banner').style.display = 'none';
             });
-        }
 
-        const copyLinkBtn = document.getElementById('copy-share-link');
-        if (copyLinkBtn) {
-            copyLinkBtn.addEventListener('click', () => {
+        // ── Share link modal ──────────────────────────────────────────────────
+        document.getElementById('copy-share-link')
+            ?.addEventListener('click', () => {
                 const url = document.getElementById('share-link-url')?.value;
-                if (url) this._copyToClipboard(url, copyLinkBtn);
+                if (url) this._copyToClipboard(url, document.getElementById('copy-share-link'));
             });
-        }
-
-        const closeModal = document.getElementById('share-link-close');
-        if (closeModal) {
-            closeModal.addEventListener('click', () => this._hideModal());
-        }
-
-        const modal = document.getElementById('share-link-modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) this._hideModal();
+        document.getElementById('share-link-close')
+            ?.addEventListener('click', () => this._closeModal('share-link-modal'));
+        document.getElementById('share-link-modal')
+            ?.addEventListener('click', (e) => {
+                if (e.target.id === 'share-link-modal') this._closeModal('share-link-modal');
             });
-        }
+
+        // ── Filename prompt modal ─────────────────────────────────────────────
+        document.getElementById('share-filename-confirm')
+            ?.addEventListener('click', () => this._onFilenameConfirm());
+        document.getElementById('share-filename-cancel')
+            ?.addEventListener('click', () => this._closeModal('share-filename-modal'));
+        document.getElementById('share-filename-modal')
+            ?.addEventListener('click', (e) => {
+                if (e.target.id === 'share-filename-modal') this._closeModal('share-filename-modal');
+            });
+        document.getElementById('share-doc-name')
+            ?.addEventListener('keydown', (e) => { if (e.key === 'Enter') this._onFilenameConfirm(); });
+
+        // ── Overwrite dialog ──────────────────────────────────────────────────
+        document.getElementById('share-overwrite-update')
+            ?.addEventListener('click', () => this._handleOverwrite());
+        document.getElementById('share-overwrite-new')
+            ?.addEventListener('click', () => this._handleCreateNew());
+        document.getElementById('share-overwrite-modal')
+            ?.addEventListener('click', (e) => {
+                if (e.target.id === 'share-overwrite-modal') this._closeModal('share-overwrite-modal');
+            });
     }
 
-    // ─── Viewer: Load shared content from URL ────────────────────────────────────
+    // ─── Viewer: load shared content from URL ────────────────────────────────
 
     _checkSharedContent() {
         const params = new URLSearchParams(window.location.search);
-        if (params.has('gdrive')) {
-            this._fetchDriveFile(params.get('gdrive'));
-        }
+        if (params.has('gdrive')) this._fetchDriveFile(params.get('gdrive'));
     }
 
     async _fetchDriveFile(fileId) {
-        const banner = document.getElementById('shared-banner');
-        if (banner) {
-            banner.style.display = 'flex';
-            const statusEl = banner.querySelector('.shared-status-text');
-            if (statusEl) statusEl.textContent = 'Loading shared document…';
-        }
+        const banner  = document.getElementById('shared-banner');
+        const statusEl = banner?.querySelector('.shared-status-text');
+
+        if (banner)    banner.style.display = 'flex';
+        if (statusEl)  statusEl.textContent  = 'Loading shared document…';
 
         try {
             const apiKey = this._getApiKey();
-            if (!apiKey) {
-                throw new Error(
-                    'Google API key not configured. ' +
-                    'To view shared documents, add your API key to js/config.js (google.apiKey).'
-                );
-            }
+            if (!apiKey) throw new Error('Google API key not configured. Add google.apiKey to js/config.js.');
 
             const res = await fetch(
                 `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${encodeURIComponent(apiKey)}`
             );
 
             if (res.status === 403) throw new Error('Access denied. The file may not be publicly shared.');
-            if (res.status === 404) throw new Error('File not found. The link may be invalid or the file was deleted.');
-            if (!res.ok) throw new Error(`Could not load document (HTTP ${res.status}).`);
+            if (res.status === 404) throw new Error('File not found. The link may be invalid or deleted.');
+            if (!res.ok)            throw new Error(`Could not load document (HTTP ${res.status}).`);
 
             const markdown = await res.text();
 
-            if (banner) {
-                const statusEl = banner.querySelector('.shared-status-text');
-                if (statusEl) statusEl.textContent = 'Shared document';
-            }
+            if (statusEl) statusEl.textContent = 'Shared document';
 
             const input = document.getElementById('markdown-input');
             if (input) input.value = markdown;
 
-            // Render once the renderer is ready
-            const tryRender = (attempts = 0) => {
-                if (typeof window.renderMarkdown === 'function') {
-                    window.renderMarkdown();
-                } else if (attempts < 30) {
-                    setTimeout(() => tryRender(attempts + 1), 200);
-                }
+            const tryRender = (n = 0) => {
+                if (typeof window.renderMarkdown === 'function') window.renderMarkdown();
+                else if (n < 30) setTimeout(() => tryRender(n + 1), 200);
             };
             setTimeout(() => tryRender(), 400);
 
         } catch (err) {
-            if (banner) {
-                const statusEl = banner.querySelector('.shared-status-text');
-                if (statusEl) statusEl.textContent = 'Could not load shared document';
-            }
+            if (statusEl) statusEl.textContent = 'Could not load shared document';
             this._showToast(err.message, 'error', 8000);
         }
     }
 
-    // ─── Author: Share flow ──────────────────────────────────────────────────────
+    // ─── Author: entry point ─────────────────────────────────────────────────
 
     onShareClick() {
         const markdown = document.getElementById('markdown-input')?.value?.trim();
@@ -141,7 +133,7 @@ class ShareManager {
             return;
         }
 
-        const preview = document.getElementById('preview');
+        const preview        = document.getElementById('preview');
         const hasPlaceholder = preview?.querySelector('p[style*="italic"]');
         if (hasPlaceholder) {
             this._showToast('Please render your document before sharing.', 'warning');
@@ -155,71 +147,153 @@ class ShareManager {
         }
 
         this.pendingMarkdown = markdown;
-        this._requestDriveToken();
+
+        // ── Step 1: cache check ───────────────────────────────────────────────
+        const cache = this._getCache();
+
+        if (!cache) {
+            // First time — prompt for filename
+            this._showFilenamePrompt(this._defaultFilename());
+            return;
+        }
+
+        if (cache.markdown === markdown) {
+            // Nothing changed — show cached link immediately
+            this._showShareModal(cache.url, cache.filename + '.md');
+            return;
+        }
+
+        // Content changed — ask the user
+        this._showOverwriteDialog(cache.filename);
     }
 
-    _requestDriveToken() {
-        const waitForGoogle = (attempts = 0) => {
-            if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-                if (attempts < 25) {
-                    setTimeout(() => waitForGoogle(attempts + 1), 200);
-                } else {
-                    this._showToast('Google services not available. Please refresh the page.', 'error');
-                }
-                return;
-            }
+    // ─── Step 2A: Overwrite dialog ───────────────────────────────────────────
+
+    _showOverwriteDialog(existingFilename) {
+        const nameEl = document.getElementById('share-overwrite-filename');
+        if (nameEl) nameEl.textContent = existingFilename + '.md';
+        document.getElementById('share-overwrite-modal').style.display = 'flex';
+    }
+
+    async _handleOverwrite() {
+        this._closeModal('share-overwrite-modal');
+        const cache = this._getCache();
+        if (!cache) return;
+
+        this._setShareBtnLoading('Connecting to Drive…');
+        try {
+            await this._ensureDriveToken();
+            await this._overwriteDriveFile(this.pendingMarkdown, cache.fileId, cache.filename);
+        } catch (err) {
+            this._resetShareBtn();
+            this._showToast('Update failed: ' + err.message, 'error');
+        }
+    }
+
+    _handleCreateNew() {
+        this._closeModal('share-overwrite-modal');
+        const cache = this._getCache();
+        const suffix  = cache?.nextSuffix ?? 1;
+        const base    = cache?.baseName   ?? this._defaultFilename();
+        this._showFilenamePrompt(`${base}_${suffix}`);
+    }
+
+    // ─── Step 2B: Filename prompt ────────────────────────────────────────────
+
+    _showFilenamePrompt(defaultName) {
+        const input = document.getElementById('share-doc-name');
+        if (input) {
+            input.value = defaultName;
+            setTimeout(() => { input.focus(); input.select(); }, 150);
+        }
+        document.getElementById('share-filename-modal').style.display = 'flex';
+    }
+
+    _onFilenameConfirm() {
+        const input = document.getElementById('share-doc-name');
+        const name  = input?.value?.trim();
+        if (!name) { input?.focus(); return; }
+
+        this.pendingFilename = name;
+        this._closeModal('share-filename-modal');
+        this._startUploadFlow();
+    }
+
+    // ─── Drive token + picker + upload ───────────────────────────────────────
+
+    async _startUploadFlow() {
+        this._setShareBtnLoading('Connecting to Drive…');
+        try {
+            await this._ensureDriveToken();
+            await this._loadPickerApiIfNeeded();
+            this._setShareBtnLoading('Opening folder picker…');
+            this._showFolderPicker();
+        } catch (err) {
+            this._resetShareBtn();
+            this._showToast('Drive connection failed: ' + err.message, 'error');
+        }
+    }
+
+    _ensureDriveToken() {
+        return new Promise((resolve, reject) => {
+            const doRequest = () => {
+                this._pendingTokenResolve = resolve;
+                this._pendingTokenReject  = reject;
+                this.driveTokenClient.requestAccessToken({ prompt: '' });
+            };
 
             if (!this.driveTokenClient) {
-                this.driveTokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: this._getClientId(),
-                    scope: 'https://www.googleapis.com/auth/drive.file',
-                    callback: (tokenResponse) => {
-                        if (tokenResponse.error) {
-                            this._showToast('Drive authorization failed: ' + tokenResponse.error, 'error');
-                            this._resetShareBtn();
-                            return;
-                        }
-                        this.accessToken = tokenResponse.access_token;
-                        this._loadPickerApi();
+                const waitForGoogle = (n = 0) => {
+                    if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+                        if (n < 25) setTimeout(() => waitForGoogle(n + 1), 200);
+                        else reject(new Error('Google services not available. Please refresh the page.'));
+                        return;
                     }
-                });
+                    this.driveTokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: this._getClientId(),
+                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        callback: (resp) => this._onTokenResponse(resp)
+                    });
+                    doRequest();
+                };
+                waitForGoogle();
+            } else {
+                doRequest();
             }
-
-            this._setShareBtnLoading('Connecting to Drive…');
-            // Empty prompt = reuse existing token if available; shows consent only if needed
-            this.driveTokenClient.requestAccessToken({ prompt: '' });
-        };
-
-        waitForGoogle();
+        });
     }
 
-    _loadPickerApi() {
-        this._setShareBtnLoading('Loading folder picker…');
-
-        const onPickerLoaded = () => {
-            this.pickerApiLoaded = true;
-            this._showFolderPicker();
-        };
-
-        if (!window.gapi) {
-            const script = document.createElement('script');
-            script.src = 'https://apis.google.com/js/api.js';
-            script.onload = () => gapi.load('picker', onPickerLoaded);
-            script.onerror = () => {
-                this._showToast('Failed to load Google Picker. Check your connection.', 'error');
-                this._resetShareBtn();
-            };
-            document.head.appendChild(script);
-        } else if (!this.pickerApiLoaded) {
-            gapi.load('picker', onPickerLoaded);
+    _onTokenResponse(resp) {
+        if (resp.error) {
+            this._pendingTokenReject?.(new Error(resp.error));
         } else {
-            this._showFolderPicker();
+            this.accessToken = resp.access_token;
+            this._pendingTokenResolve?.();
         }
+        this._pendingTokenResolve = null;
+        this._pendingTokenReject  = null;
+    }
+
+    _loadPickerApiIfNeeded() {
+        return new Promise((resolve, reject) => {
+            if (this.pickerApiLoaded) { resolve(); return; }
+
+            const onLoaded = () => { this.pickerApiLoaded = true; resolve(); };
+
+            if (!window.gapi) {
+                const script    = document.createElement('script');
+                script.src      = 'https://apis.google.com/js/api.js';
+                script.onload   = () => gapi.load('picker', onLoaded);
+                script.onerror  = () => reject(new Error('Failed to load Google Picker.'));
+                document.head.appendChild(script);
+            } else {
+                gapi.load('picker', onLoaded);
+            }
+        });
     }
 
     _showFolderPicker() {
         this._resetShareBtn();
-
         const apiKey = this._getApiKey();
 
         try {
@@ -235,78 +309,74 @@ class ShareManager {
                 .setCallback((data) => this._handlePickerCallback(data));
 
             if (apiKey) builder.setDeveloperKey(apiKey);
-
             builder.build().setVisible(true);
+
         } catch (err) {
-            // Picker failed to load — fall back to uploading to Drive root
             if (confirm('Folder picker could not open.\nUpload to the root of My Drive instead?')) {
-                this._uploadToDrive(this.pendingMarkdown, null);
+                this._uploadToDrive(this.pendingMarkdown, null, this.pendingFilename);
             }
         }
     }
 
     _handlePickerCallback(data) {
-        const action = data[google.picker.Response.ACTION];
-        if (action === google.picker.Action.PICKED) {
-            const folder = data[google.picker.Response.DOCUMENTS][0];
+        if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
+            const folder   = data[google.picker.Response.DOCUMENTS][0];
             const folderId = folder[google.picker.Document.ID];
-            this._uploadToDrive(this.pendingMarkdown, folderId);
+            this._uploadToDrive(this.pendingMarkdown, folderId, this.pendingFilename);
         }
-        // ACTION.CANCEL → do nothing
     }
 
-    // ─── Drive Upload ────────────────────────────────────────────────────────────
+    // ─── Drive: new file upload ──────────────────────────────────────────────
 
-    async _uploadToDrive(markdown, folderId) {
+    async _uploadToDrive(markdown, folderId, baseName) {
         this._setShareBtnLoading('Uploading…');
+        const filename = baseName + '.md';
 
         try {
-            const date = new Date().toISOString().slice(0, 10);
-            const filename = `mistermd-${date}.md`;
-
             const metadata = { name: filename, mimeType: 'text/markdown' };
             if (folderId) metadata.parents = [folderId];
 
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', new Blob([markdown], { type: 'text/markdown' }));
+            form.append('file',     new Blob([markdown],                { type: 'text/markdown'   }));
 
             const uploadRes = await fetch(
                 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
-                {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${this.accessToken}` },
-                    body: form
-                }
+                { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}` }, body: form }
             );
 
             if (!uploadRes.ok) {
-                const errData = await uploadRes.json().catch(() => ({}));
-                throw new Error(errData.error?.message || `Upload failed (${uploadRes.status})`);
+                const e = await uploadRes.json().catch(() => ({}));
+                throw new Error(e.error?.message || `Upload failed (${uploadRes.status})`);
             }
 
             const file = await uploadRes.json();
 
-            // Grant public read access so viewers can open the link
             const permRes = await fetch(
                 `https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,
                 {
                     method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ role: 'reader', type: 'anyone' })
                 }
             );
-
             if (!permRes.ok) throw new Error('File uploaded but could not set public permissions.');
 
-            const shareUrl =
-                `${window.location.origin}${window.location.pathname}?gdrive=${file.id}`;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?gdrive=${file.id}`;
+
+            const existingCache = this._getCache();
+            this._setCache({
+                markdown,
+                fileId:     file.id,
+                url:        shareUrl,
+                filename:   baseName,
+                folderId:   folderId || null,
+                baseName:   baseName,
+                nextSuffix: (existingCache?.nextSuffix ?? 1) + 1
+            });
 
             this._resetShareBtn();
-            this._showShareModal(shareUrl, file.name);
+            this._showShareModal(shareUrl, filename);
 
         } catch (err) {
             this._resetShareBtn();
@@ -314,26 +384,78 @@ class ShareManager {
         }
     }
 
-    // ─── Share Link Modal ─────────────────────────────────────────────────────────
+    // ─── Drive: overwrite existing file ─────────────────────────────────────
+
+    async _overwriteDriveFile(markdown, fileId, baseName) {
+        this._setShareBtnLoading('Updating file…');
+
+        try {
+            const updateRes = await fetch(
+                `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        Authorization:  `Bearer ${this.accessToken}`,
+                        'Content-Type': 'text/markdown'
+                    },
+                    body: markdown
+                }
+            );
+
+            if (!updateRes.ok) {
+                const e = await updateRes.json().catch(() => ({}));
+                throw new Error(e.error?.message || `Update failed (${updateRes.status})`);
+            }
+
+            // Update only the markdown content in cache, keep everything else
+            const cache = this._getCache();
+            this._setCache({ ...cache, markdown });
+
+            this._resetShareBtn();
+            this._showShareModal(cache.url, baseName + '.md');
+            this._showToast('File updated successfully!', 'success');
+
+        } catch (err) {
+            this._resetShareBtn();
+            throw err;
+        }
+    }
+
+    // ─── Cache ───────────────────────────────────────────────────────────────
+
+    _getCache() {
+        try { return JSON.parse(localStorage.getItem(this._CACHE_KEY)); } catch (_) { return null; }
+    }
+
+    _setCache(data) {
+        try { localStorage.setItem(this._CACHE_KEY, JSON.stringify(data)); } catch (_) {}
+    }
+
+    // ─── Name helpers ────────────────────────────────────────────────────────
+
+    _defaultFilename() {
+        return `mistermd-${new Date().toISOString().slice(0, 10)}`;
+    }
+
+    // ─── Share link modal ────────────────────────────────────────────────────
 
     _showShareModal(url, filename) {
-        const modal = document.getElementById('share-link-modal');
-        const urlInput = document.getElementById('share-link-url');
-        const filenameEl = document.getElementById('share-link-filename');
+        const modal     = document.getElementById('share-link-modal');
+        const urlInput  = document.getElementById('share-link-url');
+        const nameEl    = document.getElementById('share-link-filename');
 
         if (!modal || !urlInput) return;
-
         urlInput.value = url;
-        if (filenameEl) filenameEl.textContent = filename;
+        if (nameEl) nameEl.textContent = filename;
         modal.style.display = 'flex';
     }
 
-    _hideModal() {
-        const modal = document.getElementById('share-link-modal');
-        if (modal) modal.style.display = 'none';
+    _closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
     }
 
-    // ─── UI Helpers ───────────────────────────────────────────────────────────────
+    // ─── UI helpers ──────────────────────────────────────────────────────────
 
     _setShareBtnLoading(text) {
         const btn = document.getElementById('share-btn');
@@ -352,7 +474,7 @@ class ShareManager {
     }
 
     _copyToClipboard(text, triggerBtn) {
-        const doSuccess = () => {
+        const done = () => {
             this._showToast('Link copied to clipboard!', 'success');
             if (triggerBtn) {
                 const orig = triggerBtn.textContent;
@@ -360,11 +482,10 @@ class ShareManager {
                 setTimeout(() => { triggerBtn.textContent = orig; }, 2000);
             }
         };
-
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(doSuccess).catch(() => this._fallbackCopy(text, doSuccess));
+            navigator.clipboard.writeText(text).then(done).catch(() => this._fallbackCopy(text, done));
         } else {
-            this._fallbackCopy(text, doSuccess);
+            this._fallbackCopy(text, done);
         }
     }
 
@@ -379,25 +500,17 @@ class ShareManager {
     }
 
     _showToast(message, type = 'info', duration = 4000) {
-        // Remove any existing toast
         document.querySelector('.share-toast')?.remove();
-
         const toast = document.createElement('div');
         toast.className = `share-toast share-toast-${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => toast.classList.add('share-toast-visible'));
-        });
-
+        requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('share-toast-visible')));
         setTimeout(() => {
             toast.classList.remove('share-toast-visible');
             setTimeout(() => toast.remove(), 350);
         }, duration);
     }
-
-    // ─── Config Helpers ───────────────────────────────────────────────────────────
 
     _getClientId() {
         try { return window.appConfig.get('google.clientId'); } catch (_) {}
@@ -410,7 +523,6 @@ class ShareManager {
     }
 }
 
-// Initialize
 window.shareManager = new ShareManager();
 document.addEventListener('DOMContentLoaded', () => {
     window.shareManager.initialize();
