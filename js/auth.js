@@ -74,22 +74,15 @@ class AuthManager {
             }
 
             try {
-                // Chrome-specific configuration
                 const initConfig = {
                     client_id: clientId,
                     callback: (response) => this.handleCredentialResponse(response),
-                    auto_select: this.browserInfo.isChrome ? false : autoSelect, // Disable auto-select in Chrome
-                    cancel_on_tap_outside: cancelOnTapOutside
+                    auto_select: autoSelect,
+                    cancel_on_tap_outside: cancelOnTapOutside,
+                    itp_support: true
                 };
 
-                // Add Chrome-specific settings
-                if (this.browserInfo.isChrome) {
-                    initConfig.use_fedcm_for_prompt = false; // Disable FedCM which can cause issues
-                    initConfig.itp_support = true; // Enable Intelligent Tracking Prevention support
-                }
-
                 if (window.log) {
-                    window.log.debug(`Browser detected: ${this.browserInfo.isChrome ? 'Chrome' : 'Other'}`, 'Auth');
                     window.log.debug('Auth config:', 'Auth', initConfig);
                 }
 
@@ -167,19 +160,17 @@ class AuthManager {
         }
     }
 
-    // Show Google sign-in prompt with Chrome-specific handling
+    // Show Google sign-in prompt
     signIn() {
         if (window.log) {
             window.log.debug('signIn() called', 'Auth');
-            window.log.debug(`Auth initialized: ${this.isInitialized}, Google available: ${typeof google !== 'undefined'}`, 'Auth');
-            window.log.debug(`Browser: ${this.browserInfo.isChrome ? 'Chrome' : 'Other'}`, 'Auth');
         }
-        
+
         if (!this.isInitialized) {
             if (window.log) {
                 window.log.error('Authentication not initialized', 'Auth');
             }
-            this.showUserFriendlyError('Authentication not ready. Please refresh the page.');
+            alert('Authentication not ready. Please refresh the page.');
             return;
         }
 
@@ -187,166 +178,57 @@ class AuthManager {
             if (window.log) {
                 window.log.error('Google Identity Services not loaded', 'Auth');
             }
-            this.showUserFriendlyError('Google services not loaded. Please refresh the page.');
+            alert('Google services not loaded. Please refresh the page.');
             return;
         }
 
-        if (window.log) {
-            window.log.debug('Attempting Google sign-in', 'Auth');
-        }
-
-        // Always clear auth container first
-        const authContainer = document.getElementById('auth-container');
-        if (authContainer) {
-            authContainer.innerHTML = '';
-            authContainer.style.display = 'none';
-        }
-
-        // Chrome-specific approach: Skip the prompt and go directly to button
-        if (this.browserInfo.isChrome) {
-            if (window.log) {
-                window.log.debug('Chrome detected - using direct button approach', 'Auth');
-            }
-            setTimeout(() => this.renderSignInButton(), 50);
-            return;
-        }
-
-        // For non-Chrome browsers, try the prompt first
+        // Try the One Tap / FedCM prompt first (works in all browsers)
         try {
             google.accounts.id.prompt((notification) => {
                 if (window.log) {
-                    window.log.debug('Google prompt result received', 'Auth');
-                    window.log.debug('Notification details:', 'Auth', {
+                    window.log.debug('Prompt result:', 'Auth', {
                         isNotDisplayed: notification.isNotDisplayed(),
                         isSkippedMoment: notification.isSkippedMoment(),
                         isDismissedMoment: notification.isDismissedMoment()
                     });
                 }
-                
+
+                // Prompt was blocked (e.g. cookies disabled) — fall back to rendered button
                 if (notification.isNotDisplayed()) {
                     if (window.log) {
-                        window.log.debug('Prompt blocked - showing fallback', 'Auth');
+                        window.log.debug('Prompt not displayed - showing sign-in button', 'Auth');
                     }
-                    setTimeout(() => this.renderSignInButton(), 100);
-                } else if (notification.isSkippedMoment()) {
-                    if (window.log) {
-                        window.log.debug('User dismissed prompt', 'Auth');
-                    }
-                } else if (notification.isDismissedMoment()) {
-                    if (window.log) {
-                        window.log.debug('User dismissed popup', 'Auth');
-                    }
-                } else {
-                    if (window.log) {
-                        window.log.debug('Prompt shown successfully', 'Auth');
-                    }
+                    this.renderSignInButton();
                 }
             });
         } catch (error) {
             if (window.log) {
                 window.log.error('Error with Google prompt', 'Auth', error);
             }
-            setTimeout(() => this.renderSignInButton(), 100);
+            this.renderSignInButton();
         }
     }
 
-    /**
-     * Show user-friendly error message
-     */
-    showUserFriendlyError(message) {
-        if (this.browserInfo.isChrome) {
-            // For Chrome, show more specific guidance
-            const chromeMessage = message + '\n\nChrome users: Please make sure third-party cookies are enabled and popup blockers are disabled for this site.';
-            alert(chromeMessage);
-        } else {
-            alert(message);
-        }
-    }
-
-    // Render sign-in button with Chrome-specific handling
+    // Render Google sign-in button (fallback when prompt is blocked)
     renderSignInButton() {
         const authContainer = document.getElementById('auth-container');
         if (authContainer && !this.user) {
             try {
                 authContainer.innerHTML = '';
-                
-                // Chrome-specific button configuration
-                const buttonConfig = {
+                google.accounts.id.renderButton(authContainer, {
                     theme: 'outline',
                     size: 'medium',
                     text: 'signin_with',
+                    shape: 'rectangular',
+                    logo_alignment: 'left',
                     width: 200
-                };
-
-                // Add Chrome-specific settings
-                if (this.browserInfo.isChrome) {
-                    buttonConfig.type = 'standard'; // Use standard type for better Chrome compatibility
-                    buttonConfig.shape = 'rectangular';
-                    buttonConfig.logo_alignment = 'left';
-                }
-
-                if (window.log) {
-                    window.log.debug('Rendering Google sign-in button', 'Auth', buttonConfig);
-                }
-                
-                google.accounts.id.renderButton(authContainer, buttonConfig);
-                
+                });
                 authContainer.style.display = 'block';
-
-                // Add Chrome-specific event listeners
-                if (this.browserInfo.isChrome) {
-                    // Monitor for button click to provide better UX feedback
-                    authContainer.addEventListener('click', () => {
-                        if (window.log) {
-                            window.log.debug('Google sign-in button clicked in Chrome', 'Auth');
-                        }
-                        // Show loading state or helpful message
-                        this.showChromeSignInFeedback();
-                    });
-                }
-                
             } catch (error) {
                 if (window.log) {
                     window.log.error('Error rendering Google button', 'Auth', error);
                 }
-                // Fallback: Create a manual sign-in button
                 this.createFallbackSignInButton(authContainer);
-            }
-        }
-    }
-
-    /**
-     * Show Chrome-specific sign-in feedback
-     */
-    showChromeSignInFeedback() {
-        if (this.browserInfo.isChrome) {
-            // Create a temporary status message
-            const authContainer = document.getElementById('auth-container');
-            if (authContainer) {
-                const statusDiv = document.createElement('div');
-                statusDiv.style.cssText = `
-                    position: absolute;
-                    background: #333;
-                    color: white;
-                    padding: 8px 12px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    top: 100%;
-                    left: 0;
-                    margin-top: 5px;
-                    white-space: nowrap;
-                    z-index: 1000;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                `;
-                statusDiv.textContent = 'Opening Google sign-in...';
-                authContainer.appendChild(statusDiv);
-                
-                // Remove after 3 seconds
-                setTimeout(() => {
-                    if (statusDiv.parentNode) {
-                        statusDiv.parentNode.removeChild(statusDiv);
-                    }
-                }, 3000);
             }
         }
     }
@@ -685,24 +567,6 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Hide Google button when mouse leaves auth area
-document.addEventListener('DOMContentLoaded', function() {
-    const headerAuth = document.querySelector('.header-auth');
-    if (headerAuth) {
-        headerAuth.addEventListener('mouseleave', function() {
-            const authContainer = document.getElementById('auth-container');
-            if (authContainer && window.authManager && !window.authManager.isAuthenticated()) {
-                // Small delay to allow for Google popup interaction
-                setTimeout(() => {
-                    if (authContainer && !authContainer.matches(':hover')) {
-                        authContainer.innerHTML = '';
-                        authContainer.style.display = 'none';
-                    }
-                }, 200);
-            }
-        });
-    }
-});
 
 if (window.log) {
     window.log.debug('Auth module loaded', 'Auth');
