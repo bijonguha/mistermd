@@ -717,7 +717,7 @@ class AdvancedExportSystem {
                     <meta charset="UTF-8">
                     <title>PDF Export</title>
                     <style>${css}</style>
-                    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.2.3/dist/mermaid.min.js"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.min.js"></script>
                 </head>
                 <body>
                     <div class="export-content">${content}</div>
